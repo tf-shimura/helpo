@@ -1,16 +1,16 @@
 {
   "feature_name": "internal-qa-ai",
   "created_at": "2026-08-27T03:13:25Z",
-  "updated_at": "2026-08-27T04:41:18Z",
+  "updated_at": "2026-08-27T06:27:37Z",
   "language": "ja",
-  "phase": "requirements-generated",
+  "phase": "design-generated",
   "approvals": {
     "requirements": {
       "generated": true,
-      "approved": false
+      "approved": true
     },
     "design": {
-      "generated": false,
+      "generated": true,
       "approved": false
     },
     "tasks": {
