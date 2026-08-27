@@ -1,7 +1,7 @@
 # Research & Design Decisions
 
 ## Summary
-- **Feature**: `internal-qa-ai`
+- **Feature**: `helpo`
 - **Discovery Scope**: New Feature（Full Discovery）
 - **Key Findings**:
   - リポジトリには実行コード、技術スタック、テスト基盤、プロジェクト固有ステアリングがなく、既存パターンを継承できないグリーンフィールドである。
@@ -12,7 +12,7 @@
 
 ### コードベースとステアリングの現状
 - **Context**: 既存方式との整合性と変更対象を確認した。
-- **Sources Consulted**: リポジトリ全体、`AGENTS.md`、`.kiro/specs/internal-qa-ai/requirements.md`、`.kiro/settings/templates/specs/design.md`
+- **Sources Consulted**: リポジトリ全体、`AGENTS.md`、`.kiro/specs/helpo/requirements.md`、`.kiro/settings/templates/specs/design.md`
 - **Findings**:
   - `src/`、`package.json`、DBスキーマ、テスト、CIは存在しない。
   - `.kiro/steering/product.md`、`tech.md`、`structure.md` は存在しない。
