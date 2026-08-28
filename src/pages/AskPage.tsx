@@ -74,7 +74,11 @@ function SendIcon() {
   )
 }
 
-export default function AskPage() {
+type AskPageProps = {
+  onLogout?: () => void
+}
+
+export default function AskPage({ onLogout }: AskPageProps) {
   const [viewState, setViewState] = useState<ViewState>('empty')
   const [question, setQuestion] = useState('')
   const [answer, setAnswer] = useState<MockAnswer | null>(null)
@@ -191,9 +195,9 @@ export default function AskPage() {
             <span className="hidden sm:inline">山田 太郎さん</span>
             <button
               type="button"
-              aria-disabled="true"
-              title="ログアウト機能は準備中です"
-              className="rounded-lg px-3 py-2 font-medium"
+              onClick={onLogout}
+              disabled={!onLogout}
+              className="rounded-lg px-3 py-2 font-medium disabled:cursor-not-allowed disabled:text-slate-400"
             >
               ログアウト
             </button>

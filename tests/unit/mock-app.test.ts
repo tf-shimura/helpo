@@ -1,10 +1,13 @@
-import { render, screen } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { createElement } from 'react'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MockApp } from '../../src/MockApp'
 import { ManualClock } from '../../src/shared/mock/manual-clock'
 import { createMockStore } from '../../src/shared/mock/mock-store'
 import { resolveScreen } from '../../src/shared/mock/screen-access'
+
+afterEach(cleanup)
 
 describe('ブラウザ内モック状態', () => {
   it('認証状態、失敗回数、ロック、セッションを保持する', () => {
@@ -32,6 +35,27 @@ describe('ブラウザ内モック状態', () => {
     expect(store.authenticate('E001', 'employee-pass').status).toBe('locked')
 
     clock.advanceBy(10 * 60 * 1000)
+    expect(store.authenticate('E001', 'employee-pass').status).toBe('authenticated')
+  })
+
+  it('ロック解除後の失敗を新しい1回目として記録する', () => {
+    const clock = new ManualClock(new Date('2026-08-28T00:00:00Z'))
+    const store = createMockStore(clock)
+    for (let attempt = 0; attempt < 5; attempt += 1) store.authenticate('E001', 'wrong')
+    clock.advanceBy(10 * 60 * 1000)
+
+    expect(store.authenticate('E001', 'wrong').status).toBe('invalid')
+    for (let attempt = 0; attempt < 3; attempt += 1) expect(store.authenticate('E001', 'wrong').status).toBe('invalid')
+    expect(store.authenticate('E001', 'wrong').status).toBe('locked')
+  })
+
+  it('ログイン成功時に連続失敗回数をリセットする', () => {
+    const store = createMockStore(new ManualClock())
+    for (let attempt = 0; attempt < 4; attempt += 1) store.authenticate('E001', 'wrong')
+    expect(store.authenticate('E001', 'employee-pass').status).toBe('authenticated')
+    store.logout()
+
+    for (let attempt = 0; attempt < 4; attempt += 1) expect(store.authenticate('E001', 'wrong').status).toBe('invalid')
     expect(store.authenticate('E001', 'employee-pass').status).toBe('authenticated')
   })
 
@@ -156,5 +180,104 @@ describe('5画面のアクセス判定', () => {
 
     rerender(createElement(MockApp, { requestedScreen: 'faq-admin', role: 'employee' }))
     expect(screen.getByRole('alert')).toHaveTextContent('権限がありません')
+  })
+})
+
+describe('ログイン体験', () => {
+  it('有効な一般社員アカウントで質問画面へ移動しログアウトできる', async () => {
+    const user = userEvent.setup()
+    const store = createMockStore(new ManualClock(new Date('2026-08-28T00:00:00Z')))
+    render(createElement(MockApp, { requestedScreen: 'login', store }))
+
+    await user.type(screen.getByLabelText('社員ID'), 'E001')
+    await user.type(screen.getByLabelText('パスワード'), 'employee-pass')
+    await user.click(screen.getByRole('button', { name: 'ログイン' }))
+
+    expect(screen.getByRole('heading', { name: '社内制度について質問' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'ログアウト' }))
+    expect(screen.getByRole('heading', { name: 'ログイン' })).toBeInTheDocument()
+    expect(screen.queryByText('登録済みのよくある質問をもとに')).not.toBeInTheDocument()
+  })
+
+  it('管理者アカウントでも質問画面へ移動する', async () => {
+    const user = userEvent.setup()
+    const store = createMockStore(new ManualClock())
+    render(createElement(MockApp, { requestedScreen: 'login', store }))
+
+    await user.type(screen.getByLabelText('社員ID'), 'A001')
+    await user.type(screen.getByLabelText('パスワード'), 'admin-pass')
+    await user.click(screen.getByRole('button', { name: 'ログイン' }))
+
+    expect(screen.getByRole('heading', { name: '社内制度について質問' })).toBeInTheDocument()
+    expect(store.getCurrentUser()?.role).toBe('admin')
+  })
+
+  it('単発の無効な資格情報では共通文言を表示して未認証を維持する', async () => {
+    const user = userEvent.setup()
+    const store = createMockStore(new ManualClock())
+    render(createElement(MockApp, { requestedScreen: 'login', store }))
+
+    await user.type(screen.getByLabelText('社員ID'), 'E001')
+    await user.type(screen.getByLabelText('パスワード'), 'wrong')
+    await user.click(screen.getByRole('button', { name: 'ログイン' }))
+
+    expect(screen.getByRole('alert')).toHaveTextContent('社員IDまたはパスワードが正しくありません')
+    expect(screen.getByRole('heading', { name: 'ログイン' })).toBeInTheDocument()
+    expect(store.getCurrentUser()).toBeNull()
+  })
+
+  it('ログイン処理中の重複送信を受け付けない', async () => {
+    const user = userEvent.setup()
+    const store = createMockStore(new ManualClock())
+    const authenticate = vi.spyOn(store, 'authenticate')
+    render(createElement(MockApp, { requestedScreen: 'login', store }))
+
+    await user.type(screen.getByLabelText('社員ID'), 'E001')
+    await user.type(screen.getByLabelText('パスワード'), 'employee-pass')
+    await user.dblClick(screen.getByRole('button', { name: 'ログイン' }))
+
+    expect(authenticate).toHaveBeenCalledTimes(1)
+  })
+
+  it('無効な資格情報と5回目のロックを表示し、10分後に受付を再開する', async () => {
+    const user = userEvent.setup()
+    const clock = new ManualClock(new Date('2026-08-28T00:00:00Z'))
+    const store = createMockStore(clock)
+    render(createElement(MockApp, { requestedScreen: 'login', store }))
+
+    const employeeId = screen.getByLabelText('社員ID')
+    const password = screen.getByLabelText('パスワード')
+    await user.type(employeeId, 'E001')
+    for (let attempt = 1; attempt <= 5; attempt += 1) {
+      await user.clear(password)
+      await user.type(password, 'wrong')
+      await user.click(screen.getByRole('button', { name: 'ログイン' }))
+      if (attempt < 5) {
+        expect(screen.getByRole('alert')).toHaveTextContent('社員IDまたはパスワードが正しくありません')
+        expect(screen.getByRole('heading', { name: 'ログイン' })).toBeInTheDocument()
+      }
+    }
+    expect(screen.getByRole('alert')).toHaveTextContent('ログインに5回失敗したため、10分間ロックされました')
+
+    await user.clear(password)
+    await user.type(password, 'employee-pass')
+    await user.click(screen.getByRole('button', { name: 'ログイン' }))
+    expect(screen.getByRole('alert')).toHaveTextContent('ロック中です')
+
+    clock.advanceBy(10 * 60 * 1000)
+    await user.click(screen.getByRole('button', { name: 'ログイン' }))
+    expect(screen.getByRole('heading', { name: '社内制度について質問' })).toBeInTheDocument()
+  })
+
+  it('期限切れセッションと未認証の保護画面アクセスをログインへ戻す', () => {
+    const clock = new ManualClock(new Date('2026-08-28T00:00:00Z'))
+    const store = createMockStore(clock)
+    store.authenticate('A001', 'admin-pass')
+    const { rerender } = render(createElement(MockApp, { requestedScreen: 'login', store }))
+    expect(screen.getByRole('heading', { name: '社内制度について質問' })).toBeInTheDocument()
+
+    clock.advanceBy(24 * 60 * 60 * 1000)
+    rerender(createElement(MockApp, { requestedScreen: 'history', store }))
+    expect(screen.getByRole('heading', { name: 'ログイン' })).toBeInTheDocument()
   })
 })
