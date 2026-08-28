@@ -140,8 +140,8 @@
   - _Boundary: AnswerService, GroundingPolicy_
   - _Depends: 4.1, 5.1, 5.2_
 
-- [ ] 6. SSE lifecycleと保存条件を完成する
-- [ ] 6.1 typed SSE encoderとsingle-terminal guardを実装する
+- [x] 6. SSE lifecycleと保存条件を完成する
+- [x] 6.1 typed SSE encoderとsingle-terminal guardを実装する
   - UTF-8の`event`/single-line JSON/blank-line frameを生成し、startを最初に一回、chunk sequenceを0から連番にする。
   - complete/unanswerable/errorの一つだけをterminalとして許し、terminal後のwriteを拒否する。
   - Unicode、改行escape、byte分割、0/複数chunk、重複terminalをparser contract testで確認できる状態を完了条件とする。
@@ -149,7 +149,7 @@
   - _Boundary: SseEncoder
   - _Depends: 1.3_
 
-- [ ] 6.2 回答terminalと履歴保存をtransaction境界へ接続する
+- [x] 6.2 回答terminalと履歴保存をtransaction境界へ接続する
   - complete時は質問、固定回答、source snapshot、時刻、ownerを、unanswerable時は理由と案内を短いtransactionで保存する。
   - DB commit後だけcomplete/unanswerableを送信し、provider障害、timeout、grounding処理障害、save失敗では履歴を残さずerrorへする。
   - complete/unanswerableの再起動後履歴と各失敗の非保存をintegration testで観測できる状態を完了条件とする。
@@ -157,7 +157,7 @@
   - _Boundary: AnswerService, HistoryRepository_
   - _Depends: 2.2, 5.3, 6.1_
 
-- [ ] 6.3 disconnectとtimeoutをanswer streamへ伝播する
+- [x] 6.3 disconnectとtimeoutをanswer streamへ伝播する
   - request signal、server timeout、provider signalを連結し、commit前disconnectでproviderとevent送信を止めて保存しない。
   - commit後transport disconnectは確定履歴を維持し、部分履歴や複数terminalを作らない。
   - commit前/後のrace、timeout、provider abort、writableでないerror eventを決定的なintegration testで再現できる状態を完了条件とする。
@@ -165,7 +165,7 @@
   - _Boundary: AnswerService, OpenAiAnswerProvider, SseEncoder_
   - _Depends: 6.2_
 
-- [ ] 6.4 POST answer APIをpreflightとSSEへ接続する
+- [x] 6.4 POST answer APIをpreflightとSSEへ接続する
   - stream開始前にOrigin、Accept、Content-Type、session、questionを検証し、失敗時はJSON errorを返す。
   - 成功時はno-store/no-buffering headersとSSEを返し、AnswerServiceのeventだけをencodeする。
   - 正常、回答不能、400/401/403/406/415、AI failure、timeout、disconnect、save failureがAPI contractどおり観測できる状態を完了条件とする。

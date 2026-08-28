@@ -1,12 +1,12 @@
 import { z } from 'zod'
-import { createRequestId, toApiError } from './api-error'
+import { toApiError } from './api-error'
 import type { AppError, Result } from './api-error'
-
-export { createRequestId, toApiError }
+export { createRequestId } from './api-error'
+export { toApiError }
 
 export async function requireJson(request: Request): Promise<Result<unknown>> {
   const contentType = request.headers.get('content-type')
-  if (contentType === null || !contentType.toLowerCase().startsWith('application/json')) {
+  if (!contentType?.toLowerCase().startsWith('application/json')) {
     return { ok: false, error: { kind: 'unsupported_media', code: 'UNSUPPORTED_MEDIA_TYPE' } }
   }
   try {
