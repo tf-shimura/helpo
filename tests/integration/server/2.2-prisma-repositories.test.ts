@@ -43,7 +43,7 @@ afterEach(async () => {
 describe('Prisma repositories', () => {
   it('SQLite接続をWAL・foreign keysで初期化する', async () => {
     const { prisma } = await createRepositoryContext()
-    const [{ foreign_keys: foreignKeys }] = await prisma.$queryRaw<{ foreign_keys: number }[]>`PRAGMA foreign_keys`
+    const [{ foreign_keys: foreignKeys }] = await prisma.$queryRaw<{ foreign_keys: bigint }[]>`PRAGMA foreign_keys`
     const [{ journal_mode: journalMode }] = await prisma.$queryRaw<{ journal_mode: string }[]>`PRAGMA journal_mode`
     expect(foreignKeys).toBe(1n)
     expect(journalMode).toBe('wal')

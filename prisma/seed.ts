@@ -3,8 +3,8 @@ import { PrismaClient, Role } from '../src/generated/prisma/client'
 
 const passwordHash = process.env.SEED_EMPLOYEE_PASSWORD_HASH
 const parts = passwordHash?.split('$')
-const parameters = parts?.[3]?.split(',').map((parameter) => parameter.split('='))
-const parsedParameters = parameters?.every((parameter) => parameter.length === 2)
+const parameters = parts?.[3]?.split(',').map((parameter: string) => parameter.split('='))
+const parsedParameters = parameters?.every((parameter: string[]) => parameter.length === 2)
   ? Object.fromEntries(parameters)
   : undefined
 const isValidHash =
