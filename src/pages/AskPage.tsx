@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { countGraphemes, isBlankInput, splitGraphemes, truncateGraphemes, validateGraphemeLimit } from '../shared/validation/graphemes'
 
 type ViewState = 'empty' | 'loading' | 'success' | 'error'
 type Feedback = 'good' | 'bad' | null
@@ -10,12 +11,6 @@ type MockAnswer = {
 
 const SAMPLE_QUESTION = '有給休暇はいつまでに申請すればよいですか？'
 const MAX_QUESTION_LENGTH = 400
-
-const segmenter = new Intl.Segmenter('ja', { granularity: 'grapheme' })
-
-function splitGraphemes(value: string) {
-  return Array.from(segmenter.segment(value), ({ segment }) => segment)
-}
 
 const DUMMY_ANSWER: MockAnswer = {
   answer:
@@ -86,8 +81,8 @@ export default function AskPage() {
   const [feedback, setFeedback] = useState<Feedback>(null)
   const activeRequest = useRef<AbortController | null>(null)
 
-  const characterCount = useMemo(() => splitGraphemes(question).length, [question])
-  const canSubmit = question.trim().length > 0 && viewState !== 'loading'
+  const characterCount = useMemo(() => countGraphemes(question), [question])
+  const canSubmit = !isBlankInput(question) && validateGraphemeLimit(question, MAX_QUESTION_LENGTH) && viewState !== 'loading'
 
   useEffect(() => () => {
     activeRequest.current?.abort()
@@ -147,7 +142,7 @@ export default function AskPage() {
   }
 
   const handleQuestionChange = (value: string) => {
-    setQuestion(splitGraphemes(value).slice(0, MAX_QUESTION_LENGTH).join(''))
+    setQuestion(truncateGraphemes(value, MAX_QUESTION_LENGTH))
   }
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
