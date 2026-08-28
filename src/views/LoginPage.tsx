@@ -1,10 +1,11 @@
 import { useState, type FormEvent } from 'react'
-import type { AuthenticationResult } from '../shared/mock/mock-store'
 
-type LoginPageProps = {
-  authenticate: (employeeId: string, password: string) => AuthenticationResult
+type LoginResult = { status: 'authenticated' | 'invalid' | 'locked' }
+
+type LoginPageProps = Readonly<{
+  authenticate: (employeeId: string, password: string) => LoginResult | Promise<LoginResult>
   onAuthenticated: () => void
-}
+}>
 
 export function LoginPage({ authenticate, onAuthenticated }: LoginPageProps) {
   const [employeeId, setEmployeeId] = useState('')
@@ -16,8 +17,7 @@ export function LoginPage({ authenticate, onAuthenticated }: LoginPageProps) {
     event.preventDefault()
     if (isSubmitting) return
     setIsSubmitting(true)
-    await Promise.resolve()
-    const result = authenticate(employeeId, password)
+    const result = await authenticate(employeeId, password)
     if (result.status === 'authenticated') {
       setMessage(null)
       onAuthenticated()

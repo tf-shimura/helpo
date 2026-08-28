@@ -56,7 +56,7 @@
   - _Boundary: SessionState, ScreenAdapters_
   - _Depends: 2.1, 2.2_
 
-- [ ] 3. 回答stream protocolとUI lifecycleを作る
+- [x] 3. 回答stream protocolとUI lifecycleを作る
 - [x] 3.1 (P) incremental UTF-8 SSE parserを実装する（モック先行版）
   - byte境界を跨ぐUnicodeをstreaming decodeし、LF/CRLF、`event`、single-line JSON `data`、空行frameを解析する。
   - 上流5 eventをruntime検証し、unknown event、不正JSON、不正field、terminalなしEOFをprotocol failureにする。
@@ -73,7 +73,7 @@
   - _Boundary: AnswerState_
   - _Depends: 1.3_
 
-- [ ] 3.3 POST answer clientとAbort lifecycleを統合する
+- [x] 3.3 POST answer clientとAbort lifecycleを統合する
   - JSON questionと`Accept: text/event-stream`でPOSTし、preflight JSON errorと200 streamをcontent typeに基づいて分ける。
   - request単位AbortControllerとgeneration IDを用い、中断・画面離脱後のeventと古いretry eventをUIへ反映しない。
   - 400/401/403/406/415、0/複数chunk complete、unanswerable、error、unexpected EOF、利用者中断が実ReadableStream testで観測できる状態を完了条件とする。
@@ -123,7 +123,7 @@
   - _Depends: 4.1, 4.2, 4.3, 4.4_
 
 - [ ] 5. 実server境界の統合検証を完成する
-- [ ] 5.1 HTTP/session/error contract integration matrixを作る
+- [x] 5.1 HTTP/session/error contract integration matrixを作る
   - login 200/401/423、logout 204、全保護route 401、admin 403、FAQ/feedback 404/409、400 fields、406/415、5xxを実Route Handlerで検証する。
   - Cookie jarはbrowser mechanismだけで扱い、値をtest assertion、snapshot、logへ取り出さない。
   - 上流endpoint表の全client-observable pathと未知/不正response fail-closedが成功する状態を完了条件とする。
@@ -131,7 +131,7 @@
   - _Boundary: ClientIntegrationTests_
   - _Depends: 4.5_
 
-- [ ] 5.2 stream・persistence・disconnect integration matrixを作る
+- [x] 5.2 stream・persistence・disconnect integration matrixを作る
   - fake provider/test DBでcomplete、0 chunk complete、unanswerable、AI failure、timeout、grounding failure、save failure、commit前/後disconnectを実HTTP streamから再現する。
   - start first、chunk 0連番、single terminal、sourceを照合する。errorは5 codeすべてについてOpenAPI discriminator mapping先の対応schemaと固定`retryable`（AI_UNAVAILABLE=true、AI_TIMEOUT=true、GROUNDING_FAILED=false、PERSISTENCE_FAILED=true、INTERNAL_ERROR=false）をclient runtime schema/parserで検証し、履歴再取得の保存/非保存を確認する。
   - complete/unanswerableだけ保存、error/save failure/commit前abortは非保存、commit後disconnectは確定履歴維持のmatrixが成功する状態を完了条件とする。

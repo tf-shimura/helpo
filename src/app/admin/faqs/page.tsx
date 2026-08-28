@@ -1,5 +1,7 @@
-import { MockRoute } from '../../../components/mock-route'
+'use client'
+
+import { HelpoClient } from '../../../components/client/helpo-client'
 
 export default function AdminFaqsRoute() {
-  return <MockRoute requestedScreen="faq-admin" role="admin" />
+  return <HelpoClient initialScreen="faq-admin" />
 }

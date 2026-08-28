@@ -37,7 +37,7 @@ class FakeHistoryRepository implements HistoryRepository {
     return {
       ok: true,
       value: {
-        id: randomUUID(),
+        id: input.answerId,
         accountId: input.accountId,
         question: input.question,
         outcome: 'COMPLETE',
@@ -56,7 +56,7 @@ class FakeHistoryRepository implements HistoryRepository {
     return {
       ok: true,
       value: {
-        id: randomUUID(),
+        id: input.answerId,
         accountId: input.accountId,
         question: input.question,
         outcome: 'UNANSWERABLE',

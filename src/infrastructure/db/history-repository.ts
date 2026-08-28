@@ -59,6 +59,7 @@ export class PrismaHistoryRepository implements HistoryRepository {
 
   async commitComplete(
     input: Readonly<{
+      answerId: string
       accountId: string
       question: string
       answer: string
@@ -75,6 +76,7 @@ export class PrismaHistoryRepository implements HistoryRepository {
       const model = (await this.prisma.$transaction(async (tx) => {
         return tx.answerHistory.create({
           data: {
+            id: input.answerId,
             accountId: input.accountId,
             question: input.question,
             outcome: 'COMPLETE',
@@ -91,11 +93,12 @@ export class PrismaHistoryRepository implements HistoryRepository {
   }
 
   async commitUnanswerable(
-    input: Readonly<{ accountId: string; question: string; reason: string }>,
+    input: Readonly<{ answerId: string; accountId: string; question: string; reason: string }>,
   ): Promise<Result<AnswerHistory>> {
     try {
       const model = await this.prisma.answerHistory.create({
         data: {
+          id: input.answerId,
           accountId: input.accountId,
           question: input.question,
           outcome: 'UNANSWERABLE',

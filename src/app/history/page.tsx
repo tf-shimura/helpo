@@ -1,5 +1,7 @@
-import { MockRoute } from '../../components/mock-route'
+'use client'
+
+import { HelpoClient } from '../../components/client/helpo-client'
 
 export default function HistoryRoute() {
-  return <MockRoute requestedScreen="history" />
+  return <HelpoClient initialScreen="history" />
 }

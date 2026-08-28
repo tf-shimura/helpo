@@ -32,6 +32,15 @@ export function beginAnswer(): MockAnswerState {
   return { ...initialAnswerState, status: 'awaiting-start' }
 }
 
+export function abortAnswer(state: MockAnswerState): MockAnswerState {
+  if (state.status !== 'awaiting-start' && state.status !== 'streaming') return state
+  return { ...state, status: 'aborted', sources: [] }
+}
+
+export function failAnswer(state: MockAnswerState, message: string, retryable = false): MockAnswerState {
+  return { ...state, status: 'failed', message, retryable, sources: [] }
+}
+
 function failed(state: MockAnswerState): MockAnswerState {
-  return { ...state, status: 'failed', message: '回答を取得できませんでした。もう一度お試しください', sources: [] }
+  return failAnswer(state, '回答を取得できませんでした。もう一度お試しください')
 }

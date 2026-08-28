@@ -21,6 +21,12 @@ const APPROVED_OPENAI_MODELS = [
     structuredOutputs: true,
     store: false,
   },
+  {
+    id: 'o3-mini',
+    api: 'responses',
+    structuredOutputs: true,
+    store: false,
+  },
 ] as const
 
 export type ServerConfig = Readonly<{

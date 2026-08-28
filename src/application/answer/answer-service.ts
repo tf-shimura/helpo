@@ -111,6 +111,7 @@ export class AnswerService {
     }
 
     const commit = await this.historyRepository.commitComplete({
+      answerId,
       accountId: actor.accountId,
       question,
       answer: grounding.answer,
@@ -156,6 +157,7 @@ export class AnswerService {
     signal: AbortSignal,
   ): AsyncGenerator<AnswerEvent> {
     const commit = await this.historyRepository.commitUnanswerable({
+      answerId,
       accountId: actor.accountId,
       question,
       reason,

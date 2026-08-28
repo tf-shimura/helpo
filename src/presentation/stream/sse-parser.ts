@@ -40,6 +40,8 @@ export async function* parseSseStream(stream: ReadableStream<Uint8Array>): Async
   }
 }
 
+const SSE_ERROR_CODES = new Set(['AI_UNAVAILABLE', 'AI_TIMEOUT', 'GROUNDING_FAILED', 'PERSISTENCE_FAILED', 'INTERNAL_ERROR'])
+
 function parseFrame(frame: string): MockAnswerEvent {
   let eventType = ''
   let data = ''
@@ -53,10 +55,19 @@ function parseFrame(frame: string): MockAnswerEvent {
   if (!isRecord(payload) || typeof payload.answerId !== 'string') throw new Error('SSEイベント項目が不正です')
   if (eventType === 'start') return { type: 'start', answerId: payload.answerId }
   if (eventType === 'chunk' && typeof payload.sequence === 'number' && typeof payload.text === 'string') return { type: 'chunk', answerId: payload.answerId, sequence: payload.sequence, text: payload.text }
-  if (eventType === 'complete' && typeof payload.answer === 'string' && Array.isArray(payload.sources) && payload.sources.every((source) => typeof source === 'string')) return { type: 'complete', answerId: payload.answerId, answer: payload.answer, sources: payload.sources }
+  if (eventType === 'complete' && typeof payload.answer === 'string' && Array.isArray(payload.sources)) {
+    const sources = payload.sources.map(normalizeSource)
+    if (sources.every((source) => source !== null)) return { type: 'complete', answerId: payload.answerId, answer: payload.answer, sources: sources as string[] }
+  }
   if (eventType === 'unanswerable' && typeof payload.reason === 'string' && typeof payload.message === 'string') return { type: 'unanswerable', answerId: payload.answerId, reason: payload.reason, message: payload.message }
-  if (eventType === 'error' && typeof payload.code === 'string' && typeof payload.retryable === 'boolean' && typeof payload.message === 'string') return { type: 'error', answerId: payload.answerId, code: payload.code, retryable: payload.retryable, message: payload.message }
+  if (eventType === 'error' && typeof payload.code === 'string' && SSE_ERROR_CODES.has(payload.code) && typeof payload.retryable === 'boolean' && typeof payload.message === 'string') return { type: 'error', answerId: payload.answerId, code: payload.code, retryable: payload.retryable, message: payload.message }
   throw new Error('SSEイベント項目が不正です')
+}
+
+function normalizeSource(source: unknown): string | null {
+  if (typeof source === 'string') return source
+  if (isRecord(source) && typeof source.question === 'string') return source.question
+  return null
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

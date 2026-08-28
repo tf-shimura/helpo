@@ -86,6 +86,7 @@ export interface FaqRepository {
 export interface HistoryRepository {
   commitComplete(
     input: Readonly<{
+      answerId: string
       accountId: string
       question: string
       answer: string
@@ -93,7 +94,7 @@ export interface HistoryRepository {
     }>,
   ): Promise<Result<HistoryWithSources>>
   commitUnanswerable(
-    input: Readonly<{ accountId: string; question: string; reason: string }>,
+    input: Readonly<{ answerId: string; accountId: string; question: string; reason: string }>,
   ): Promise<Result<AnswerHistory>>
   listByAccountId(accountId: string): Promise<readonly HistoryWithSources[]>
   findById(answerId: string): Promise<AnswerHistory | null>

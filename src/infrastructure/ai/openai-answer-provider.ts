@@ -93,6 +93,8 @@ export class OpenAiAnswerProvider implements AnswerProvider {
     try {
       const response = await Promise.race([fetchPromise, timeoutPromise])
       if (!response.ok) {
+        const body = await response.text().catch(() => '')
+        console.error('[OpenAiAnswerProvider] non-ok response', { status: response.status, body, keyLength: this.config.apiKey.length, model: this.config.model })
         throw new AnswerProviderError('AI_UNAVAILABLE', true, `provider responded ${response.status}`)
       }
       const data = (await response.json()) as unknown

@@ -22,7 +22,16 @@ export default defineConfig({
           name: 'client',
           environment: 'jsdom',
           include: ['tests/**/*.test.{ts,tsx}'],
-          exclude: ['**/server/**'],
+          exclude: ['**/server/**', 'tests/integration/client/**'],
+          setupFiles: './tests/setup.ts',
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'client-integration',
+          environment: 'node',
+          include: ['tests/integration/client/**/*.test.ts'],
           setupFiles: './tests/setup.ts',
         },
       },

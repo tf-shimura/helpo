@@ -69,8 +69,8 @@ export function MockApp({ requestedScreen, role = null, store }: MockAppProps) {
           <FaqAdminPage
             key={editingFaqId ?? 'new'}
             faq={faqs.find(({ id }) => id === editingFaqId) ?? null}
-            onCreate={(question, answer) => store?.addFaq(question, answer)}
-            onUpdate={(id, question, answer) => store?.updateFaq(id, question, answer)}
+            onCreate={(question, answer) => { store?.addFaq(question, answer) }}
+            onUpdate={(id, question, answer) => { store?.updateFaq(id, question, answer) }}
           />
         </>}
       </main>

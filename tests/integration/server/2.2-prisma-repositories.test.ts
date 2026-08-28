@@ -143,6 +143,7 @@ describe('Prisma repositories', () => {
     if (!faq.ok) return
 
     const complete = await historyRepo.commitComplete({
+      answerId: randomUUID(),
       accountId: account.id,
       question: '問1',
       answer: '答1',
@@ -154,6 +155,7 @@ describe('Prisma repositories', () => {
     expect(complete.value.feedback).toBeNull()
 
     const unanswerable = await historyRepo.commitUnanswerable({
+      answerId: randomUUID(),
       accountId: account.id,
       question: '問2',
       reason: 'NO_GROUNDING',
@@ -179,6 +181,7 @@ describe('Prisma repositories', () => {
     if (!faq.ok) return
 
     const history = await historyRepo.commitComplete({
+      answerId: randomUUID(),
       accountId: account.id,
       question: '問',
       answer: '答',

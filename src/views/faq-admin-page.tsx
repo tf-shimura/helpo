@@ -2,11 +2,11 @@ import { useState } from 'react'
 import type { MockFaq } from '../shared/mock/mock-store'
 import { isBlankInput, truncateGraphemes } from '../shared/validation/graphemes'
 
-type FaqAdminPageProps = {
+type FaqAdminPageProps = Readonly<{
   faq: MockFaq | null
-  onCreate: (question: string, answer: string) => void
-  onUpdate: (id: string, question: string, answer: string) => void
-}
+  onCreate: (question: string, answer: string) => void | Promise<void>
+  onUpdate: (id: string, question: string, answer: string) => void | Promise<void>
+}>
 
 const LIMIT = 1000
 
@@ -17,11 +17,11 @@ export function FaqAdminPage({ faq, onCreate, onUpdate }: FaqAdminPageProps) {
   const isEditing = faq !== null
   const canSubmit = !isBlankInput(question) && !isBlankInput(answer)
 
-  const submit = () => {
+  const submit = async () => {
     setMessage(null)
     try {
-      if (faq) onUpdate(faq.id, question, answer)
-      else onCreate(question, answer)
+      if (faq) await onUpdate(faq.id, question, answer)
+      else await onCreate(question, answer)
       setMessage({ kind: 'success', text: faq ? 'FAQを修正しました' : 'FAQを登録しました' })
     } catch (error) {
       setMessage({ kind: 'error', text: error instanceof Error ? error.message : 'FAQを保存できませんでした' })
