@@ -1,4 +1,6 @@
-export class ManualClock {
+import type { Clock } from '../time/clock'
+
+export class ManualClock implements Clock {
   private timestamp: number
 
   constructor(initialTime: Date = new Date()) {

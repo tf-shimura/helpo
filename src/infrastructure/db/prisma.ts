@@ -21,3 +21,7 @@ export function getPrisma(): PrismaClient {
   shared = createPrismaClient(databaseUrl)
   return shared
 }
+
+export function resetPrisma(): void {
+  shared = undefined
+}

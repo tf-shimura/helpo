@@ -49,8 +49,8 @@
   - _Boundary: PrismaRepositories（Owns `src/application/ports.ts`, `src/infrastructure/db/*-repository.ts`, `src/infrastructure/db/prisma.ts`, `src/infrastructure/logging/redacting-logger.ts`; May touch tests `tests/integration/server/2.2-*.test.ts`）
   - _Depends: 1.3, 2.1_
 
-- [ ] 3. 認証・session・HTTP security境界を完成する
-- [ ] 3.1 Argon2id認証とlogin lock policyを実装する
+- [x] 3. 認証・session・HTTP security境界を完成する
+- [x] 3.1 Argon2id認証とlogin lock policyを実装する
   - OWASP最低parameter以上のArgon2id verifierを用い、存在しない社員IDとpassword不一致を同じ結果にする。
   - 1〜4失敗、5回目の10分lockとcount reset、lock中拒否、10分ちょうどの解除、成功時resetをClock基準で実装する。
   - fake Clockによる全境界unit testとrepository併用integration testが通る状態を完了条件とする。
@@ -58,7 +58,7 @@
   - _Boundary: AuthService, SecurityAdapters_
   - _Depends: 1.3, 2.2_
 
-- [ ] 3.2 opaque session lifecycleとCookieを実装する
+- [x] 3.2 opaque session lifecycleとCookieを実装する
   - 32-byte random tokenを発行しSHA-256 hashだけを保存し、絶対24時間、revoke、期限切れをClock基準で判定する。
   - `helpo_session`をHttpOnly、SameSite=Lax、Path=/、Max-Age 86400、HTTPS時Secureで発行・同属性でclearする。
   - 24時間直前/ちょうど、logout後再利用、raw token非保存、再起動後sessionのtestが通る状態を完了条件とする。
@@ -66,7 +66,7 @@
   - _Boundary: AuthService, SessionRepository, SecurityAdapters_
   - _Depends: 1.3, 2.2, 3.1_
 
-- [ ] 3.3 same-origin、media negotiation、標準error responseを実装する
+- [x] 3.3 same-origin、media negotiation、標準error responseを実装する
   - 状態変更でcanonical Originをexact比較し、欠落、null、不一致を拒否する。GETは変更を行わない。
   - JSON content type、answerのSSE Accept、Zod inputをpreflightし、安定code/requestId/message/任意fieldsへ変換する。
   - 400/401/403/404/409/415/423/5xxが内部例外・秘密・社内本文を含まず契約どおりになるtestを完了条件とする。
@@ -74,7 +74,7 @@
   - _Boundary: HttpBoundary, SecurityAdapters_
   - _Depends: 1.3, 3.2_
 
-- [ ] 3.4 session login/logout APIを接続する
+- [x] 3.4 session login/logout APIを接続する
   - GET Actor復元、POST login、DELETE logoutをAuthServiceへ接続し、Node Runtime、Origin、Cookie、JSON/error契約を適用する。GETは有効CookieからActor/roleを返し、refresh/direct accessを可能にする。
   - invalid credentialは401、lock中は423、成功はactor JSONとCookie、logoutは204と失効を返す。
   - API contract testで正常、重複送信相当、期限切れ、logout後reuse、異常Originが観測できる状態を完了条件とする。

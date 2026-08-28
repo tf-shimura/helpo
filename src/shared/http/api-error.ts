@@ -7,6 +7,8 @@ export type AppError =
   | { kind: 'not_found'; code: string }
   | { kind: 'conflict'; code: string }
   | { kind: 'locked'; code: 'LOGIN_LOCKED'; retryAt: Date }
+  | { kind: 'unsupported_media'; code: string }
+  | { kind: 'not_acceptable'; code: string }
   | { kind: 'dependency'; code: string; retryable: boolean }
   | { kind: 'internal'; code: string; requestId: string }
 
@@ -38,7 +40,11 @@ export function toApiError(error: AppError, requestId: string = error.kind === '
     case 'conflict':
       return { status: 409, body: envelope('現在の状態では操作できません') }
     case 'locked':
-      return { status: 423, body: envelope('しばらく待ってから再試行してください') }
+      return { status: 423, body: envelope('しばらく待ってから再試行してください', { retryAt: error.retryAt.toISOString() }) }
+    case 'unsupported_media':
+      return { status: 415, body: envelope('対応していないメディア型です') }
+    case 'not_acceptable':
+      return { status: 406, body: envelope('受理できない応答形式です') }
     case 'dependency':
       return { status: 503, body: envelope('一時的に利用できません') }
     case 'internal':
