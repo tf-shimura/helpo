@@ -173,8 +173,8 @@
   - _Boundary: AnswerRoute, HttpBoundary, SseEncoder_
   - _Depends: 3.3, 3.4, 6.3_
 
-- [ ] 7. 契約・security・旧受入条件を横断検証する
-- [ ] 7.1 OpenAPIと全HTTP responseのcontract testを完成する
+- [x] 7. 契約・security・旧受入条件を横断検証する
+- [x] 7.1 OpenAPIと全HTTP responseのcontract testを完成する
   - 権威artifact `openapi.yaml`の全route、全request/success envelope、status別のstrict HTTP error code union、Cookie security、SSE discriminator payload/code/retryableをRoute Handler実応答と照合する。SSE errorは5 codeそれぞれでdiscriminator mapping先schemaへの適合と固定`retryable`（AI_UNAVAILABLE=true、AI_TIMEOUT=true、GROUNDING_FAILED=false、PERSISTENCE_FAILED=true、INTERNAL_ERROR=false）をcontract testで検証する。YAML構文、全`$ref`、operation数も検査する。
   - unknown field、誤content type、欠落Origin、期限切れsession、owner/admin境界、GET非変更、存在秘匿を検証する。
   - designのendpoint表にある全正常/異常pathがcontract suiteで成功する状態を完了条件とする。
@@ -182,7 +182,7 @@
   - _Boundary: ApiContractTests_
   - _Depends: 3.4, 4.4, 6.4_
 
-- [ ] 7.2 security・privacy regressionを完成する
+- [x] 7.2 security・privacy regressionを完成する
   - password hash parameter、raw password/token非保存、Cookie全属性、Origin exact match、AI `store:false`とtoolなしを検証する。
   - 全error/log pathへmarkerを流し、password、session token、question、answer、FAQ本文、provider bodyが出ないことを確認する。
   - 実secretや未承認modelを使わずsecurity suiteが成功する状態を完了条件とする。
@@ -190,7 +190,7 @@
   - _Boundary: SecurityIntegrationTests_
   - _Depends: 7.1_
 
-- [ ] 7.3 persistence、競合、外部障害のserver regressionを完成する
+- [x] 7.3 persistence、競合、外部障害のserver regressionを完成する
   - DB再起動、FAQ/feedback並行race、owner分離、AI中に長時間transactionなし、全FAQ上限を検証する。
   - complete/unanswerable保存とprovider error/timeout/disconnect/save failure非保存、SSE順序・single terminalを一つのmatrixで確認する。
   - 外部OpenAIを呼ばず旧タスク7のserver側受入条件がすべて成功する状態を完了条件とする。
@@ -198,7 +198,7 @@
   - _Boundary: ServerRegressionTests_
   - _Depends: 7.2_
 
-- [ ] 7.4 runtime、migration、boundaryの最終gateを実行する
+- [x] 7.4 runtime、migration、boundaryの最終gateを実行する
   - clean DBでmigration/seed、strict typecheck、全test、production build、Node Runtime smokeを実行する。
   - Node patch、native argon2、Prisma adapter互換とArgon2id host benchmarkを確認し、OWASP最低値を下げない。
   - 画面API接続、画面横断E2E、FAQ削除、複数instance、実秘密が差分に含まれず、後続client仕様が確定契約を利用可能な状態を完了条件とする。
