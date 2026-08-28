@@ -1,0 +1,325 @@
+openapi: 3.1.0
+info:
+  title: Helpo Server API
+  version: 1.0.0
+  description: Helpo HTTP/SSEの権威ある機械可読契約。設計本文より本artifactを優先する。
+servers:
+  - url: /api/v1
+security:
+  - sessionCookie: []
+paths:
+  /session:
+    get:
+      operationId: getSession
+      summary: CookieからActorを復元する
+      responses:
+        '200': { $ref: '#/components/responses/ActorSuccess' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '500': { $ref: '#/components/responses/InternalError' }
+    post:
+      operationId: login
+      security: []
+      requestBody: { $ref: '#/components/requestBodies/LoginRequest' }
+      responses:
+        '200':
+          description: 認証成功。helpo_session Cookieを設定する
+          headers:
+            Set-Cookie:
+              schema: { type: string }
+              description: helpo_session=<opaque>; HttpOnly; SameSite=Lax; Path=/; Max-Age=86400; HTTPS時Secure
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/ActorEnvelope' } }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/InvalidCredentials' }
+        '403': { $ref: '#/components/responses/OriginForbidden' }
+        '415': { $ref: '#/components/responses/UnsupportedMediaType' }
+        '423': { $ref: '#/components/responses/LoginLocked' }
+        '500': { $ref: '#/components/responses/InternalError' }
+    delete:
+      operationId: logout
+      responses:
+        '204':
+          description: 失効済み。Cookieを同属性でclearする
+          headers:
+            Set-Cookie: { schema: { type: string } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/OriginForbidden' }
+        '500': { $ref: '#/components/responses/InternalError' }
+  /faqs:
+    get:
+      operationId: listFaqs
+      responses:
+        '200': { $ref: '#/components/responses/FaqListSuccess' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '500': { $ref: '#/components/responses/InternalError' }
+    post:
+      operationId: createFaq
+      requestBody: { $ref: '#/components/requestBodies/FaqRequest' }
+      responses:
+        '201': { $ref: '#/components/responses/FaqSuccess' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/ForbiddenOrOrigin' }
+        '409': { $ref: '#/components/responses/FaqConflict' }
+        '415': { $ref: '#/components/responses/UnsupportedMediaType' }
+        '500': { $ref: '#/components/responses/InternalError' }
+  /faqs/{faqId}:
+    parameters:
+      - $ref: '#/components/parameters/FaqId'
+    patch:
+      operationId: updateFaq
+      requestBody: { $ref: '#/components/requestBodies/FaqRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/FaqSuccess' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/ForbiddenOrOrigin' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/FaqConflict' }
+        '415': { $ref: '#/components/responses/UnsupportedMediaType' }
+        '500': { $ref: '#/components/responses/InternalError' }
+  /answers:
+    post:
+      operationId: streamAnswer
+      requestBody: { $ref: '#/components/requestBodies/QuestionRequest' }
+      responses:
+        '200':
+          description: start、0個以上のchunk、単一terminalをSSE framingで送る
+          headers:
+            Cache-Control: { schema: { type: string, const: no-store } }
+            X-Accel-Buffering: { schema: { type: string, const: 'no' } }
+          content:
+            text/event-stream:
+              schema: { $ref: '#/components/schemas/SseStream' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/OriginForbidden' }
+        '406': { $ref: '#/components/responses/NotAcceptable' }
+        '415': { $ref: '#/components/responses/UnsupportedMediaType' }
+        '500': { $ref: '#/components/responses/InternalError' }
+  /history:
+    get:
+      operationId: listOwnHistory
+      responses:
+        '200': { $ref: '#/components/responses/HistoryListSuccess' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '500': { $ref: '#/components/responses/InternalError' }
+  /answers/{answerId}/feedback:
+    parameters:
+      - $ref: '#/components/parameters/AnswerId'
+    post:
+      operationId: submitFeedback
+      description: complete outcomeだけ評価可能。unanswerableは404。
+      requestBody: { $ref: '#/components/requestBodies/FeedbackRequest' }
+      responses:
+        '201': { $ref: '#/components/responses/FeedbackSuccess' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/OriginForbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/FeedbackConflict' }
+        '415': { $ref: '#/components/responses/UnsupportedMediaType' }
+        '500': { $ref: '#/components/responses/InternalError' }
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: helpo_session
+      description: opaque値。保存時はhashのみ。HttpOnly、SameSite=Lax、Path=/、Max-Age=86400、HTTPS時Secure。
+  parameters:
+    FaqId: { name: faqId, in: path, required: true, schema: { $ref: '#/components/schemas/Uuid' } }
+    AnswerId: { name: answerId, in: path, required: true, schema: { $ref: '#/components/schemas/Uuid' } }
+  requestBodies:
+    LoginRequest:
+      required: true
+      content: { application/json: { schema: { $ref: '#/components/schemas/LoginRequest' } } }
+    FaqRequest:
+      required: true
+      content: { application/json: { schema: { $ref: '#/components/schemas/FaqRequest' } } }
+    QuestionRequest:
+      required: true
+      content: { application/json: { schema: { $ref: '#/components/schemas/QuestionRequest' } } }
+    FeedbackRequest:
+      required: true
+      content: { application/json: { schema: { $ref: '#/components/schemas/FeedbackRequest' } } }
+  responses:
+    ActorSuccess: { description: Actor, content: { application/json: { schema: { $ref: '#/components/schemas/ActorEnvelope' } } } }
+    FaqSuccess: { description: FAQ, content: { application/json: { schema: { $ref: '#/components/schemas/FaqEnvelope' } } } }
+    FaqListSuccess: { description: FAQ一覧, content: { application/json: { schema: { $ref: '#/components/schemas/FaqListEnvelope' } } } }
+    HistoryListSuccess: { description: 本人履歴（askedAt降順）, content: { application/json: { schema: { $ref: '#/components/schemas/HistoryListEnvelope' } } } }
+    FeedbackSuccess: { description: 評価, content: { application/json: { schema: { $ref: '#/components/schemas/FeedbackEnvelope' } } } }
+    ValidationError: { $ref: '#/components/responses/Http400' }
+    InvalidCredentials: { $ref: '#/components/responses/Http401Invalid' }
+    Unauthenticated: { $ref: '#/components/responses/Http401Session' }
+    ForbiddenOrOrigin:
+      description: FORBIDDENまたはORIGIN_FORBIDDEN
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/ForbiddenErrorEnvelope'
+              - $ref: '#/components/schemas/OriginErrorEnvelope'
+    OriginForbidden: { description: Origin拒否, content: { application/json: { schema: { $ref: '#/components/schemas/OriginErrorEnvelope' } } } }
+    FaqConflict: { description: FAQ重複, content: { application/json: { schema: { $ref: '#/components/schemas/FaqConflictEnvelope' } } } }
+    FeedbackConflict: { description: 評価済み, content: { application/json: { schema: { $ref: '#/components/schemas/FeedbackConflictEnvelope' } } } }
+    NotFound: { description: 非存在または存在秘匿, content: { application/json: { schema: { $ref: '#/components/schemas/NotFoundEnvelope' } } } }
+    LoginLocked: { description: login lock, content: { application/json: { schema: { $ref: '#/components/schemas/LockedEnvelope' } } } }
+    UnsupportedMediaType: { description: unsupported media, content: { application/json: { schema: { $ref: '#/components/schemas/UnsupportedMediaEnvelope' } } } }
+    NotAcceptable: { description: SSEを受理不能, content: { application/json: { schema: { $ref: '#/components/schemas/NotAcceptableEnvelope' } } } }
+    InternalError: { description: 安全な内部失敗, content: { application/json: { schema: { $ref: '#/components/schemas/InternalErrorEnvelope' } } } }
+    Http400: { description: validation, content: { application/json: { schema: { $ref: '#/components/schemas/ValidationErrorEnvelope' } } } }
+    Http401Invalid: { description: credential拒否, content: { application/json: { schema: { $ref: '#/components/schemas/InvalidCredentialsEnvelope' } } } }
+    Http401Session: { description: session拒否, content: { application/json: { schema: { $ref: '#/components/schemas/UnauthenticatedEnvelope' } } } }
+  schemas:
+    Uuid: { type: string, format: uuid }
+    DateTime: { type: string, format: date-time }
+    Actor:
+      type: object
+      additionalProperties: false
+      required: [id, employeeId, role]
+      properties:
+        id: { $ref: '#/components/schemas/Uuid' }
+        employeeId: { type: string, minLength: 1 }
+        role: { type: string, enum: [EMPLOYEE, ADMIN] }
+    Faq:
+      type: object
+      additionalProperties: false
+      required: [id, question, answer, createdAt, updatedAt]
+      properties:
+        id: { $ref: '#/components/schemas/Uuid' }
+        question: { type: string, minLength: 1, description: 1..1000 Unicode書記素 }
+        answer: { type: string, minLength: 1, description: 1..1000 Unicode書記素 }
+        createdAt: { $ref: '#/components/schemas/DateTime' }
+        updatedAt: { $ref: '#/components/schemas/DateTime' }
+    Source:
+      type: object
+      additionalProperties: false
+      required: [faqId, question, quote]
+      properties:
+        faqId: { $ref: '#/components/schemas/Uuid' }
+        question: { type: string, minLength: 1, description: 保存時snapshot }
+        quote: { type: string, minLength: 1, description: FAQ answerの保存時snapshot完全一致引用 }
+    Feedback:
+      type: object
+      additionalProperties: false
+      required: [id, answerId, value, createdAt]
+      properties:
+        id: { $ref: '#/components/schemas/Uuid' }
+        answerId: { $ref: '#/components/schemas/Uuid' }
+        value: { type: string, enum: [GOOD, BAD] }
+        createdAt: { $ref: '#/components/schemas/DateTime' }
+    History:
+      oneOf:
+        - $ref: '#/components/schemas/CompleteHistory'
+        - $ref: '#/components/schemas/UnanswerableHistory'
+      discriminator: { propertyName: outcome, mapping: { COMPLETE: '#/components/schemas/CompleteHistory', UNANSWERABLE: '#/components/schemas/UnanswerableHistory' } }
+    CompleteHistory:
+      type: object
+      additionalProperties: false
+      required: [id, askedAt, question, outcome, answer, sources, feedback]
+      properties:
+        id: { $ref: '#/components/schemas/Uuid' }
+        askedAt: { $ref: '#/components/schemas/DateTime' }
+        question: { type: string, minLength: 1 }
+        outcome: { type: string, const: COMPLETE }
+        answer: { type: string, minLength: 1 }
+        sources: { type: array, items: { $ref: '#/components/schemas/Source' } }
+        feedback: { oneOf: [{ $ref: '#/components/schemas/Feedback' }, { type: 'null' }] }
+    UnanswerableHistory:
+      type: object
+      additionalProperties: false
+      required: [id, askedAt, question, outcome, reason, message, sources, feedback]
+      properties:
+        id: { $ref: '#/components/schemas/Uuid' }
+        askedAt: { $ref: '#/components/schemas/DateTime' }
+        question: { type: string, minLength: 1 }
+        outcome: { type: string, const: UNANSWERABLE }
+        reason: { type: string, enum: [NO_FAQS, FAQ_BUDGET_EXCEEDED, NO_GROUNDING] }
+        message: { type: string, minLength: 1 }
+        sources: { type: array, maxItems: 0, items: { $ref: '#/components/schemas/Source' } }
+        feedback: { type: 'null', description: unanswerableは評価不可 }
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required: [employeeId, password]
+      properties: { employeeId: { type: string, minLength: 1 }, password: { type: string, minLength: 1 } }
+    FaqRequest:
+      type: object
+      additionalProperties: false
+      required: [question, answer]
+      properties: { question: { type: string, minLength: 1, description: 1..1000 Unicode書記素 }, answer: { type: string, minLength: 1, description: 1..1000 Unicode書記素 } }
+    QuestionRequest:
+      type: object
+      additionalProperties: false
+      required: [question]
+      properties: { question: { type: string, minLength: 1, description: 1..400 Unicode書記素 } }
+    FeedbackRequest:
+      type: object
+      additionalProperties: false
+      required: [value]
+      properties: { value: { type: string, enum: [GOOD, BAD] } }
+    ActorEnvelope: { type: object, additionalProperties: false, required: [data], properties: { data: { $ref: '#/components/schemas/Actor' } } }
+    FaqEnvelope: { type: object, additionalProperties: false, required: [data], properties: { data: { $ref: '#/components/schemas/Faq' } } }
+    FaqListEnvelope: { type: object, additionalProperties: false, required: [data], properties: { data: { type: object, additionalProperties: false, required: [items], properties: { items: { type: array, items: { $ref: '#/components/schemas/Faq' } } } } } }
+    HistoryListEnvelope: { type: object, additionalProperties: false, required: [data], properties: { data: { type: object, additionalProperties: false, required: [items], properties: { items: { type: array, items: { $ref: '#/components/schemas/History' } } } } } }
+    FeedbackEnvelope: { type: object, additionalProperties: false, required: [data], properties: { data: { $ref: '#/components/schemas/Feedback' } } }
+    HttpErrorCode: { type: string, enum: [VALIDATION_ERROR, INVALID_CREDENTIALS, UNAUTHENTICATED, FORBIDDEN, ORIGIN_FORBIDDEN, NOT_FOUND, FAQ_QUESTION_CONFLICT, FEEDBACK_CONFLICT, LOGIN_LOCKED, UNSUPPORTED_MEDIA_TYPE, NOT_ACCEPTABLE, INTERNAL_ERROR] }
+    ValidationErrorEnvelope:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error: { type: object, additionalProperties: false, required: [requestId, code, message], properties: { requestId: { type: string, minLength: 1 }, code: { type: string, const: VALIDATION_ERROR }, message: { type: string, minLength: 1 }, fields: { type: object, additionalProperties: { type: array, minItems: 1, items: { type: string } } } } }
+    InvalidCredentialsEnvelope: { type: object, additionalProperties: false, required: [error], properties: { error: { type: object, additionalProperties: false, required: [requestId, code, message], properties: { requestId: { type: string, minLength: 1 }, code: { type: string, const: INVALID_CREDENTIALS }, message: { type: string, minLength: 1 } } } } }
+    UnauthenticatedEnvelope: { type: object, additionalProperties: false, required: [error], properties: { error: { type: object, additionalProperties: false, required: [requestId, code, message], properties: { requestId: { type: string, minLength: 1 }, code: { type: string, const: UNAUTHENTICATED }, message: { type: string, minLength: 1 } } } } }
+    ForbiddenErrorEnvelope: { type: object, additionalProperties: false, required: [error], properties: { error: { type: object, additionalProperties: false, required: [requestId, code, message], properties: { requestId: { type: string, minLength: 1 }, code: { type: string, const: FORBIDDEN }, message: { type: string, minLength: 1 } } } } }
+    OriginErrorEnvelope: { type: object, additionalProperties: false, required: [error], properties: { error: { type: object, additionalProperties: false, required: [requestId, code, message], properties: { requestId: { type: string, minLength: 1 }, code: { type: string, const: ORIGIN_FORBIDDEN }, message: { type: string, minLength: 1 } } } } }
+    NotFoundEnvelope: { type: object, additionalProperties: false, required: [error], properties: { error: { type: object, additionalProperties: false, required: [requestId, code, message], properties: { requestId: { type: string, minLength: 1 }, code: { type: string, const: NOT_FOUND }, message: { type: string, minLength: 1 } } } } }
+    FaqConflictEnvelope: { type: object, additionalProperties: false, required: [error], properties: { error: { type: object, additionalProperties: false, required: [requestId, code, message], properties: { requestId: { type: string, minLength: 1 }, code: { type: string, const: FAQ_QUESTION_CONFLICT }, message: { type: string, minLength: 1 } } } } }
+    FeedbackConflictEnvelope: { type: object, additionalProperties: false, required: [error], properties: { error: { type: object, additionalProperties: false, required: [requestId, code, message], properties: { requestId: { type: string, minLength: 1 }, code: { type: string, const: FEEDBACK_CONFLICT }, message: { type: string, minLength: 1 } } } } }
+    LockedEnvelope: { type: object, additionalProperties: false, required: [error], properties: { error: { type: object, additionalProperties: false, required: [requestId, code, message], properties: { requestId: { type: string, minLength: 1 }, code: { type: string, const: LOGIN_LOCKED }, message: { type: string, minLength: 1 }, retryAt: { $ref: '#/components/schemas/DateTime' } } } } }
+    UnsupportedMediaEnvelope: { type: object, additionalProperties: false, required: [error], properties: { error: { type: object, additionalProperties: false, required: [requestId, code, message], properties: { requestId: { type: string, minLength: 1 }, code: { type: string, const: UNSUPPORTED_MEDIA_TYPE }, message: { type: string, minLength: 1 } } } } }
+    NotAcceptableEnvelope: { type: object, additionalProperties: false, required: [error], properties: { error: { type: object, additionalProperties: false, required: [requestId, code, message], properties: { requestId: { type: string, minLength: 1 }, code: { type: string, const: NOT_ACCEPTABLE }, message: { type: string, minLength: 1 } } } } }
+    InternalErrorEnvelope: { type: object, additionalProperties: false, required: [error], properties: { error: { type: object, additionalProperties: false, required: [requestId, code, message], properties: { requestId: { type: string, minLength: 1 }, code: { type: string, const: INTERNAL_ERROR }, message: { type: string, minLength: 1 } } } } }
+    SseStream:
+      type: string
+      description: "各frameは event: <type>\\ndata: <payloadのsingle-line JSON>\\n\\n。payloadはSseEvent unionに適合する。"
+      contentMediaType: text/event-stream
+      x-event-schema: { $ref: '#/components/schemas/SseEvent' }
+    SseEvent:
+      oneOf:
+        - $ref: '#/components/schemas/StartEvent'
+        - $ref: '#/components/schemas/ChunkEvent'
+        - $ref: '#/components/schemas/CompleteEvent'
+        - $ref: '#/components/schemas/UnanswerableEvent'
+        - $ref: '#/components/schemas/ErrorEvent'
+      discriminator:
+        propertyName: type
+        mapping: { start: '#/components/schemas/StartEvent', chunk: '#/components/schemas/ChunkEvent', complete: '#/components/schemas/CompleteEvent', unanswerable: '#/components/schemas/UnanswerableEvent', error: '#/components/schemas/ErrorEvent' }
+    StartEvent: { type: object, additionalProperties: false, required: [type, answerId], properties: { type: { type: string, const: start }, answerId: { $ref: '#/components/schemas/Uuid' } } }
+    ChunkEvent: { type: object, additionalProperties: false, required: [type, answerId, sequence, text], properties: { type: { type: string, const: chunk }, answerId: { $ref: '#/components/schemas/Uuid' }, sequence: { type: integer, minimum: 0 }, text: { type: string, minLength: 1 } } }
+    CompleteEvent: { type: object, additionalProperties: false, required: [type, answerId, answer, sources], properties: { type: { type: string, const: complete }, answerId: { $ref: '#/components/schemas/Uuid' }, answer: { type: string, minLength: 1 }, sources: { type: array, minItems: 1, items: { $ref: '#/components/schemas/Source' } } } }
+    UnanswerableEvent: { type: object, additionalProperties: false, required: [type, answerId, reason, message], properties: { type: { type: string, const: unanswerable }, answerId: { $ref: '#/components/schemas/Uuid' }, reason: { type: string, enum: [NO_FAQS, FAQ_BUDGET_EXCEEDED, NO_GROUNDING] }, message: { type: string, minLength: 1 } } }
+    SseErrorCode: { type: string, enum: [AI_UNAVAILABLE, AI_TIMEOUT, GROUNDING_FAILED, PERSISTENCE_FAILED, INTERNAL_ERROR] }
+    ErrorEvent:
+      oneOf:
+        - { $ref: '#/components/schemas/AiUnavailableEvent' }
+        - { $ref: '#/components/schemas/AiTimeoutEvent' }
+        - { $ref: '#/components/schemas/GroundingFailedEvent' }
+        - { $ref: '#/components/schemas/PersistenceFailedEvent' }
+        - { $ref: '#/components/schemas/SseInternalErrorEvent' }
+      discriminator:
+        propertyName: code
+        mapping:
+          AI_UNAVAILABLE: '#/components/schemas/AiUnavailableEvent'
+          AI_TIMEOUT: '#/components/schemas/AiTimeoutEvent'
+          GROUNDING_FAILED: '#/components/schemas/GroundingFailedEvent'
+          PERSISTENCE_FAILED: '#/components/schemas/PersistenceFailedEvent'
+          INTERNAL_ERROR: '#/components/schemas/SseInternalErrorEvent'
+    ErrorEventBase: { type: object, additionalProperties: false, required: [type, answerId, code, message, retryable], properties: { type: { type: string, const: error }, answerId: { $ref: '#/components/schemas/Uuid' }, code: { $ref: '#/components/schemas/SseErrorCode' }, message: { type: string, minLength: 1 }, retryable: { type: boolean } } }
+    AiUnavailableEvent: { type: object, additionalProperties: false, required: [type, answerId, code, message, retryable], properties: { type: { type: string, const: error }, answerId: { $ref: '#/components/schemas/Uuid' }, code: { type: string, const: AI_UNAVAILABLE }, message: { type: string, minLength: 1 }, retryable: { type: boolean, const: true } } }
+    AiTimeoutEvent: { type: object, additionalProperties: false, required: [type, answerId, code, message, retryable], properties: { type: { type: string, const: error }, answerId: { $ref: '#/components/schemas/Uuid' }, code: { type: string, const: AI_TIMEOUT }, message: { type: string, minLength: 1 }, retryable: { type: boolean, const: true } } }
+    GroundingFailedEvent: { type: object, additionalProperties: false, required: [type, answerId, code, message, retryable], properties: { type: { type: string, const: error }, answerId: { $ref: '#/components/schemas/Uuid' }, code: { type: string, const: GROUNDING_FAILED }, message: { type: string, minLength: 1 }, retryable: { type: boolean, const: false } } }
+    PersistenceFailedEvent: { type: object, additionalProperties: false, required: [type, answerId, code, message, retryable], properties: { type: { type: string, const: error }, answerId: { $ref: '#/components/schemas/Uuid' }, code: { type: string, const: PERSISTENCE_FAILED }, message: { type: string, minLength: 1 }, retryable: { type: boolean, const: true } } }
+    SseInternalErrorEvent: { type: object, additionalProperties: false, required: [type, answerId, code, message, retryable], properties: { type: { type: string, const: error }, answerId: { $ref: '#/components/schemas/Uuid' }, code: { type: string, const: INTERNAL_ERROR }, message: { type: string, minLength: 1 }, retryable: { type: boolean, const: false } } }
