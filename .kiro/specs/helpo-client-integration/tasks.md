@@ -15,7 +15,7 @@
   - _Boundary: ContractTypes_
   - _Depends: helpo-server 7.4完了, OpenAPI version/checksum gate_
 
-- [ ] 1.2 Vite画面資産をNext App Routerの5 route shellへ移す
+- [x] 1.2 Vite画面資産をNext App Routerの5 route shellへ移す（モック先行版）
   - 上流が用意したNext host上にログイン、質問、履歴、FAQ閲覧、FAQ管理のrouteとglobal styleを配置する。
   - 既存navigation、現在地、空状態、tooltip association、page markupを維持し、server domain/infrastructureへ依存しない。
   - API未接続のstatic screen regressionで5画面とrole別表示がNext production build上に現れる状態を完了条件とする。
@@ -32,7 +32,7 @@
   - _Depends: 1.1_
 
 - [ ] 2. 型安全なHTTP・session境界を作る
-- [ ] 2.1 同一origin JSON API clientを実装する
+- [x] 2.1 同一origin JSON API clientを実装する（モック先行版）
   - 相対`/api/v1` URL、same-origin credentials、JSON Content-Type、no-storeを各契約操作へ適用し、成功応答をruntime検証する。
   - GET session Actor復元、login/logout、FAQ list/create/update、history、feedbackを上流method/path/statusどおり提供し、tokenやmodelを引数・body・logへ含めない。
   - 実route contract fixtureで全正常status/schemaとmalformed successのfail-closedが観測できる状態を完了条件とする。
@@ -40,7 +40,7 @@
   - _Boundary: ApiClient_
   - _Depends: 1.1, 1.3_
 
-- [ ] 2.2 (P) 標準HTTP errorをUI outcomeへ変換する
+- [x] 2.2 (P) 標準HTTP errorをUI outcomeへ変換する（モック先行版）
   - OpenAPIで各operation/statusに許可されたstrict envelopeだけを受理して400/401/403/404/409/406/415/423/500と全安定codeを判別し、validation fields、再認証、権限拒否、競合、retryを型付き結果へ変換する。`fields`はVALIDATION_ERRORだけ、`retryAt`はLOGIN_LOCKEDだけで受理する。
   - status/code不一致、未知code、許可されない`fields`/`retryAt`を含む未知field、不正JSONを成功扱いせず、response bodyや内部情報をlogしないsafe fallbackにする。
   - 全公開codeとmalformed/unknown fixtureで期待するUI outcomeが返るunit testを完了条件とする。
@@ -48,7 +48,7 @@
   - _Boundary: ErrorMapper_
   - _Depends: 1.1_
 
-- [ ] 2.3 token-free session stateと保護画面遷移を実装する
+- [x] 2.3 token-free session stateと保護画面遷移を実装する（モック先行版）
   - actorだけをunknown/authenticated/unauthenticated stateで管理し、Cookie値を読まず、login成功、logout、保護APIの401を全画面へ反映する。
   - refresh/direct access時は`GET /api/v1/session`でActor/roleを復元し、401では社内情報を消去してloginへ遷移する。
   - login成功、invalid/locked、logout、期限切れ401、認証済みlogin access、一般社員admin拒否が画面testで観測できる状態を完了条件とする。
@@ -57,7 +57,7 @@
   - _Depends: 2.1, 2.2_
 
 - [ ] 3. 回答stream protocolとUI lifecycleを作る
-- [ ] 3.1 (P) incremental UTF-8 SSE parserを実装する
+- [x] 3.1 (P) incremental UTF-8 SSE parserを実装する（モック先行版）
   - byte境界を跨ぐUnicodeをstreaming decodeし、LF/CRLF、`event`、single-line JSON `data`、空行frameを解析する。
   - 上流5 eventをruntime検証し、unknown event、不正JSON、不正field、terminalなしEOFをprotocol failureにする。
   - byte/frame分割、複数frame、改行escape、0 chunk用fixtureが欠落・重複なしでparseされるunit testを完了条件とする。
@@ -65,7 +65,7 @@
   - _Boundary: SseParser_
   - _Depends: 1.1, 1.3_
 
-- [ ] 3.2 (P) answer event reducerとsingle-terminal guardを実装する
+- [x] 3.2 (P) answer event reducerとsingle-terminal guardを実装する（モック先行版）
   - idle、awaiting start、streaming、completed、unanswerable、failed、abortedを判別し、同一answerIdと0始まり連番を強制する。
   - completeだけにanswer/source、unanswerableにmessage、error/invalid EOFにsafe retry stateを与え、部分回答を確定扱いしない。
   - start重複、sequence gap、ID不一致、terminal重複、terminal後data、abortで最初の確定状態が上書きされないunit testを完了条件とする。
@@ -82,7 +82,7 @@
   - _Depends: 2.1, 2.2, 3.1, 3.2_
 
 - [ ] 4. 5画面を実API stateへ接続する
-- [ ] 4.1 質問入力・stream・source表示を接続する
+- [x] 4.1 質問入力・stream・source表示を接続する（モック先行版）
   - 既存0/1/400/401 Unicode書記素、空白、tooltip、処理中重複防止を維持してanswer clientへ接続する。
   - streamingはchunkを順次表示し、completeで完成本文と重複なしFAQ質問、unanswerableで案内、failureでsafe retryを表示する。
   - 生成中・回答不能・失敗ではsourceを表示せず、abort結果をlocal historyへ追加しない画面testを完了条件とする。
@@ -90,7 +90,7 @@
   - _Boundary: AskAdapter, AskPage_
   - _Depends: 2.3, 3.3_
 
-- [ ] 4.2 (P) 履歴画面をserver authorityへ接続する
+- [x] 4.2 (P) 履歴画面をserver authorityへ接続する（モック先行版）
   - 画面表示時にGET historyを実行し、newest-firstの本人結果、日時、質問、outcome、source、任意feedbackを表示する。
   - 空一覧の正式文言、401 global遷移、失敗時safe retryを扱い、client actor IDでfilterやowner推測を行わない。
   - complete/unanswerableだけが再取得後に現れ、error/abortは仮追加されないintegration testを完了条件とする。
@@ -98,7 +98,7 @@
   - _Boundary: HistoryAdapter, HistoryPage_
   - _Depends: 2.3_
 
-- [ ] 4.3 (P) FAQ閲覧・管理画面をserver authorityへ接続する
+- [x] 4.3 (P) FAQ閲覧・管理画面をserver authorityへ接続する（モック先行版）
   - GET listとadmin create/updateを接続し、empty state、role別導線、新規/編集mode、未変更保存、成功文言を維持する。
   - 0/1/1000/1001 Unicode書記素、空白入力、field error、FAQ conflict、403、404で入力を保持し、成功後に一覧を再取得する。
   - 一般社員に管理操作がなく、adminの登録・修正・競合が実responseと一致し、削除requestが存在しない画面testを完了条件とする。
@@ -106,7 +106,7 @@
   - _Boundary: FaqAdapter, FaqPages_
   - _Depends: 2.3_
 
-- [ ] 4.4 feedbackを確定回答と履歴へ接続する
+- [x] 4.4 feedbackを確定回答と履歴へ接続する（モック先行版）
   - `complete`の未評価結果だけにGOOD/BADを送信し、成功時に選択値と受付完了を表示して両操作を非活性にする。`unanswerable`には評価UI/requestを作らない。
   - 409では再取得済み評価へ同期し、404/401/5xxを成功扱いせず、変更・取消・集計操作を作らない。
   - 進行中/失敗/評価済みでは送信不能で、質問画面と履歴の評価表示がserver結果へ一致するintegration testを完了条件とする。
@@ -114,7 +114,7 @@
   - _Boundary: AskAdapter, ApiClient, AskPage, HistoryAdapter_
   - _Depends: 4.1, 4.2_
 
-- [ ] 4.5 navigationと全画面error/session transitionを統合する
+- [x] 4.5 navigationと全画面error/session transitionを統合する（モック先行版）
   - 質問、履歴、FAQ閲覧、FAQ管理間の導線とlogoutをAPI-connected providerへ統合する。
   - 任意画面の401でconfidential stateを一括消去し、403/404/409/5xxは各画面の安全なoutcomeへ留める。
   - 一般社員・管理者社員・未認証で直接URLとnavigationがscreen mapどおりになるintegration testを完了条件とする。
