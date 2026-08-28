@@ -115,8 +115,8 @@
   - _Boundary: FaqRoutes, HistoryRoute, FeedbackRoute_
   - _Depends: 3.3, 4.1, 4.2, 4.3_
 
-- [ ] 5. 根拠限定AI pipelineを作る
-- [ ] 5.1 (P) grounding検証と固定回答templateを実装する
+- [x] 5. 根拠限定AI pipelineを作る
+- [x] 5.1 (P) grounding検証と固定回答templateを実装する
   - candidate全件のID mapに対して、unknown ID、空引用、非完全一致引用、重複を拒否する。
   - 検証済み引用だけから順序の決まった回答と重複なしsourceを構成し、FAQ内の命令を実行対象にしない。
   - 単一/複数FAQ、injection文字列、unknown ID、部分不一致、FAQ外自由文が回答へ入らないunit testを完了条件とする。
@@ -124,7 +124,7 @@
   - _Boundary: GroundingPolicy_
   - _Depends: 1.3_
 
-- [ ] 5.2 (P) OpenAI Responses API adapterを実装する
+- [x] 5.2 (P) OpenAI Responses API adapterを実装する
   - SDKのResponses streaming、`store:false`、strict Structured OutputsでFAQ IDとexact quoteだけを選択させ、tool/URL/DB accessを与えない。
   - provider eventを公開せず、Zod検証済みprovider resultへ変換し、AbortSignal、timeout、認証/limit/service errorを安全な分類へ変換する。
   - fake SDKでselected/unanswerable/malformed/timeout/abort/provider errorを再現し、provider本文をerror/logへ出さないtestを完了条件とする。
@@ -132,7 +132,7 @@
   - _Boundary: OpenAiAnswerProvider_
   - _Depends: 1.1, 1.3_
 
-- [ ] 5.3 全FAQの安全上限判定と回答orchestrationを実装する
+- [x] 5.3 全FAQの安全上限判定と回答orchestrationを実装する
   - 質問1〜400書記素を検証し、全FAQを取得して0件/全件budget超過ならproviderを呼ばず回答不能にする。
   - provider selectionをgrounding policyへ渡し、検証済み回答だけをchunk化する。暗黙のFAQ間引きやdefault model fallbackを行わない。
   - 上限直前は全件、超過は0件送信で回答不能、400/401境界、FAQ0件、grounding失敗が観測できるtestを完了条件とする。

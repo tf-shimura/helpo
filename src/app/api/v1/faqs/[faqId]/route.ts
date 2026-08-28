@@ -25,8 +25,7 @@ const faqInputSchema = z.object({
 function getFaqId(request: Request): string | null {
   const pathname = new URL(request.url).pathname
   const segments = pathname.split('/')
-  const id = segments[segments.length - 1]
-  return id ?? null
+  return segments.at(-1) ?? null
 }
 
 async function authenticate(request: Request): Promise<Result<Actor>> {

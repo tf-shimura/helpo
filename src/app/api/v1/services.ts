@@ -9,9 +9,12 @@ import { AuthService } from '../../../application/auth/auth-service'
 import { FaqService } from '../../../application/faq/faq-service'
 import { HistoryService } from '../../../application/history/history-service'
 import { FeedbackService } from '../../../application/feedback/feedback-service'
+import { AnswerService } from '../../../application/answer/answer-service'
+import { OpenAiAnswerProvider } from '../../../infrastructure/ai/openai-answer-provider'
 import { SystemClock } from '../../../shared/time/clock'
 import { Argon2PasswordVerifier } from '../../../infrastructure/security/argon2-password'
 import { RandomSessionTokenizer } from '../../../shared/security/session-token'
+import { parseServerConfig } from '../../../shared/config/server-config'
 
 export function getAuthService(): AuthService {
   const prisma = getPrisma()
@@ -35,4 +38,19 @@ export function getHistoryService(): HistoryService {
 export function getFeedbackService(): FeedbackService {
   const historyRepository = new PrismaHistoryRepository(getPrisma())
   return new FeedbackService(historyRepository, new PrismaFeedbackRepository(getPrisma()))
+}
+
+export function getAnswerService(): AnswerService {
+  const prisma = getPrisma()
+  const config = parseServerConfig(process.env)
+  return new AnswerService(
+    new PrismaFaqRepository(prisma),
+    new PrismaHistoryRepository(prisma),
+    new OpenAiAnswerProvider({
+      apiKey: config.ai.apiKey,
+      model: config.ai.model,
+      timeoutMs: config.ai.timeoutMs,
+    }),
+    { faqBudget: 4_000, chunkSize: 100 },
+  )
 }
