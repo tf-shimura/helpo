@@ -160,14 +160,48 @@ export default function AskPage() {
   return (
     <div className="min-h-screen bg-[#f5f7fb] text-base leading-[1.7]">
       <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-6">
-          <div className="flex items-center gap-6">
-            <div className="grid h-9 w-9 place-items-center rounded-lg bg-blue-600 text-base leading-[1.7] font-bold text-white">問</div>
-            <p className="text-lg leading-[1.7] font-bold tracking-tight text-slate-900">社内なんでも質問AI</p>
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-6 px-6 py-3">
+          <div className="order-1 flex min-w-0 items-center gap-6">
+            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-blue-600 text-base leading-[1.7] font-bold text-white">問</div>
+            <p className="truncate text-lg leading-[1.7] font-bold tracking-tight text-slate-900">社内なんでも質問AI</p>
           </div>
-          <div className="flex items-center gap-6 text-base leading-[1.7] text-slate-600">
+
+          <nav aria-label="共通ナビゲーション" className="order-3 flex basis-full flex-wrap items-center gap-6 text-base leading-[1.7] lg:order-2 lg:ml-auto lg:basis-auto">
+            <button
+              type="button"
+              aria-current="page"
+              className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 font-semibold text-blue-700"
+            >
+              質問
+            </button>
+            <button
+              type="button"
+              aria-disabled="true"
+              title="履歴画面は準備中です"
+              className="rounded-lg px-3 py-2 font-medium text-slate-600"
+            >
+              履歴
+            </button>
+            <button
+              type="button"
+              aria-disabled="true"
+              title="FAQ閲覧画面は準備中です"
+              className="rounded-lg px-3 py-2 font-medium text-slate-600"
+            >
+              FAQ閲覧
+            </button>
+          </nav>
+
+          <div className="order-2 ml-auto flex items-center gap-6 text-base leading-[1.7] text-slate-600 lg:order-3 lg:ml-0">
             <span className="hidden sm:inline">山田 太郎さん</span>
-            <button type="button" className="rounded-lg px-6 py-6 font-medium hover:bg-slate-100">ログアウト</button>
+            <button
+              type="button"
+              aria-disabled="true"
+              title="ログアウト機能は準備中です"
+              className="rounded-lg px-3 py-2 font-medium"
+            >
+              ログアウト
+            </button>
           </div>
         </div>
       </header>
@@ -219,9 +253,24 @@ export default function AskPage() {
               />
               <div className="flex items-center justify-between gap-6">
                 <p className="text-base leading-[1.7] text-slate-500">空白や改行だけでは質問できません</p>
-                <p className="shrink-0 text-base leading-[1.7] tabular-nums text-slate-600" aria-live="polite">
-                  <span className="font-semibold text-slate-900">{characterCount}</span> / 400文字
-                </p>
+                <div className="relative shrink-0">
+                  {characterCount === MAX_QUESTION_LENGTH && (
+                    <p
+                      id="question-limit-tooltip"
+                      role="tooltip"
+                      className="absolute bottom-full right-0 mb-3 w-max max-w-72 rounded-lg bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-lg after:absolute after:right-6 after:top-full after:border-8 after:border-transparent after:border-t-slate-900"
+                    >
+                      質問は400文字以内で入力してください
+                    </p>
+                  )}
+                  <p
+                    className="text-base leading-[1.7] tabular-nums text-slate-600"
+                    aria-describedby={characterCount === MAX_QUESTION_LENGTH ? 'question-limit-tooltip' : undefined}
+                    aria-live="polite"
+                  >
+                    <span className="font-semibold text-slate-900">{characterCount}</span> / 400文字
+                  </p>
+                </div>
               </div>
             </div>
 
