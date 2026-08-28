@@ -7,7 +7,25 @@ export default defineConfig({
     },
   },
   test: {
-    environment: 'jsdom',
-    setupFiles: './tests/setup.ts',
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'server',
+          environment: 'node',
+          include: ['tests/unit/server/**/*.test.ts', 'tests/integration/server/**/*.test.ts'],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'client',
+          environment: 'jsdom',
+          include: ['tests/**/*.test.{ts,tsx}'],
+          exclude: ['**/server/**'],
+          setupFiles: './tests/setup.ts',
+        },
+      },
+    ],
   },
 })

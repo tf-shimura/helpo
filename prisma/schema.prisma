@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum Role {
+  EMPLOYEE
+  ADMIN
+}
+
+enum AnswerOutcome {
+  COMPLETE
+  UNANSWERABLE
+}
+
+enum FeedbackValue {
+  GOOD
+  BAD
+}
+
+model Account {
+  id           String          @id @default(uuid())
+  employeeId   String          @unique
+  passwordHash String
+  role         Role
+  failedCount  Int             @default(0)
+  lockedUntil  DateTime?
+  sessions     Session[]
+  histories    AnswerHistory[]
+  feedback     Feedback[]
+}
+
+model Session {
+  id        String    @id @default(uuid())
+  tokenHash String    @unique
+  accountId String
+  createdAt DateTime  @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
+  account   Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId, expiresAt])
+}
+
+model Faq {
+  id        String         @id @default(uuid())
+  question  String         @unique
+  answer    String
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  sources   AnswerSource[]
+}
+
+model AnswerHistory {
+  id        String         @id @default(uuid())
+  accountId String
+  question  String
+  outcome   AnswerOutcome
+  answer    String?
+  reason    String?
+  askedAt   DateTime       @default(now())
+  account   Account        @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  sources   AnswerSource[]
+  feedback  Feedback?
+
+  @@index([accountId, askedAt(sort: Desc)])
+}
+
+model AnswerSource {
+  id          String        @id @default(uuid())
+  answerId    String
+  faqId       String
+  faqQuestion String
+  exactQuote  String
+  ordinal     Int
+  history     AnswerHistory @relation(fields: [answerId], references: [id], onDelete: Cascade)
+  faq         Faq           @relation(fields: [faqId], references: [id], onDelete: Restrict)
+
+  @@unique([answerId, ordinal])
+}
+
+model Feedback {
+  id        String          @id @default(uuid())
+  answerId  String          @unique
+  accountId String
+  value     FeedbackValue
+  createdAt DateTime        @default(now())
+  history   AnswerHistory   @relation(fields: [answerId], references: [id], onDelete: Cascade)
+  account   Account         @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId])
+}

@@ -32,8 +32,8 @@
 
   - _Depends: 1.2_
 
-- [ ] 2. SQLite永続化の基礎を作る
-- [ ] 2.1 Prisma schema、migration、研修seedを定義する
+- [x] 2. SQLite永続化の基礎を作る
+- [x] 2.1 Prisma schema、migration、研修seedを定義する
   - Account、Session、Faq、AnswerHistory、AnswerSource、Feedbackとrole/outcome/valueをmodel化する。
   - employeeId、token hash、FAQ質問、answer単位feedback、source順序のunique制約と履歴・session indexを設ける。
   - 平文passwordや実秘密を含めずに事前accountをArgon2id hashで用意でき、空DBへmigrationとseedが再現可能な状態を完了条件とする。
@@ -41,12 +41,12 @@
   - _Boundary: PrismaSchema
   - _Depends: 1.1, 1.2_
 
-- [ ] 2.2 Prisma接続とdomain別repositoryを実装する
+- [x] 2.2 Prisma接続とdomain別repositoryを実装する
   - 単一instance向けSQLite接続、WAL、短いtransaction、domain別repositoryを実装する。
   - token hash lookup、atomic login failure、FAQ unique競合、history+source commit、owner feedback unique競合を提供する。
   - migration後のrepository contract testと再起動後永続性testが通り、AI待機中にtransactionを保持しない状態を完了条件とする。
   - _Requirements: 1.2, 1.4, 1.6, 2.1, 2.4, 2.5, 2.6, 4.3, 4.4, 7.1, 7.2, 8.1, 9.1, 9.2, 9.5_
-  - _Boundary: PrismaRepositories（Owns `src/infrastructure/db/*-repository.ts`, `src/infrastructure/db/prisma.ts`, `src/infrastructure/logging/redacting-logger.ts`; May touch tests `tests/integration/server/2.2-*.test.ts`）
+  - _Boundary: PrismaRepositories（Owns `src/application/ports.ts`, `src/infrastructure/db/*-repository.ts`, `src/infrastructure/db/prisma.ts`, `src/infrastructure/logging/redacting-logger.ts`; May touch tests `tests/integration/server/2.2-*.test.ts`）
   - _Depends: 1.3, 2.1_
 
 - [ ] 3. 認証・session・HTTP security境界を完成する
