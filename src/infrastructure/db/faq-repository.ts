@@ -18,7 +18,7 @@ export class PrismaFaqRepository implements FaqRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
   async list(): Promise<readonly Faq[]> {
-    const models = await this.prisma.faq.findMany({ orderBy: { updatedAt: 'desc' } })
+    const models = await this.prisma.faq.findMany({ orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }] })
     return models.map(toFaq)
   }
 

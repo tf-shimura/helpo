@@ -1,4 +1,5 @@
 import type { Result } from '../shared/http/api-error'
+export type { Result } from '../shared/http/api-error'
 
 export type Role = 'EMPLOYEE' | 'ADMIN'
 export type AnswerOutcome = 'COMPLETE' | 'UNANSWERABLE'
@@ -95,6 +96,7 @@ export interface HistoryRepository {
     input: Readonly<{ accountId: string; question: string; reason: string }>,
   ): Promise<Result<AnswerHistory>>
   listByAccountId(accountId: string): Promise<readonly HistoryWithSources[]>
+  findById(answerId: string): Promise<AnswerHistory | null>
 }
 
 export interface FeedbackRepository {

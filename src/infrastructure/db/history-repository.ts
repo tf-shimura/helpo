@@ -116,4 +116,9 @@ export class PrismaHistoryRepository implements HistoryRepository {
     })) as unknown as HistoryWithSourcesModel[]
     return models.map(toHistoryWithSources)
   }
+
+  async findById(answerId: string): Promise<AnswerHistory | null> {
+    const model = await this.prisma.answerHistory.findUnique({ where: { id: answerId } })
+    return model ? toAnswerHistory(model) : null
+  }
 }

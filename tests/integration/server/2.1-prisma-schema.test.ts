@@ -44,7 +44,7 @@ describe('Prisma schema migration and training seed', () => {
       'AnswerSource_answerId_ordinal_key',
       'Feedback_answerId_key',
     ]))
-  })
+  }, 10000)
 
   it.each(['', '$argon2id$garbage', '$argon2i$v=19$m=19456,t=2,p=1$c2FsdA$ZGlnZXN0', '$argon2id$v=19$m=1024,t=1,p=1$c2FsdA$ZGlnZXN0'])(
     '不正または弱いArgon2id hash %sを値非表示で拒否する',

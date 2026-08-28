@@ -82,8 +82,8 @@
   - _Boundary: SessionRoute, AuthService_
   - _Depends: 3.1, 3.2, 3.3_
 
-- [ ] 4. FAQ、履歴、評価のapplication機能を実装する
-- [ ] 4.1 (P) FAQ閲覧・登録・修正serviceを実装する
+- [x] 4. FAQ、履歴、評価のapplication機能を実装する
+- [x] 4.1 (P) FAQ閲覧・登録・修正serviceを実装する
   - listは認証済み全role、create/updateはadminだけとし、ID/質問/回答/日時を返す。
   - 1〜1000書記素、空白、完全一致unique、空更新、対象なしを扱い、削除use caseを作らない。
   - service testで空一覧、Unicode境界、一般社員拒否、重複、並行重複が契約どおりになる状態を完了条件とする。
@@ -91,7 +91,7 @@
   - _Boundary: FaqService, FaqRepository_
   - _Depends: 1.3, 2.2, 3.2_
 
-- [ ] 4.2 (P) 本人限定履歴serviceを実装する
+- [x] 4.2 (P) 本人限定履歴serviceを実装する
   - session actorのaccountIdだけでqueryし、新しい順に完成回答または回答不能、source snapshot、feedbackを返す。
   - adminを含む他社員IDを入力として受け取らず、直接answer指定時もnon-ownerへ404を返す。
   - 空一覧、並び順、account分離、FAQ修正後もsnapshotが維持されるtestを完了条件とする。
@@ -99,7 +99,7 @@
   - _Boundary: HistoryService, HistoryRepository_
   - _Depends: 1.3, 2.2, 3.2_
 
-- [ ] 4.3 (P) 本人の一回限り評価serviceを実装する
+- [x] 4.3 (P) 本人の一回限り評価serviceを実装する
   - 保存済み`COMPLETE` answerのownerだけがGOOD/BADを一回保存できるようにし、`UNANSWERABLE`は評価対象外として404にする。
   - 不正値、non-owner、未保存/失敗answer、2回目と並行raceを400/404/409へ分け、変更・取消・集計use caseを作らない。
   - 二つの並行評価で一件だけ確定し、既存値が変わらないintegration testを完了条件とする。
@@ -107,7 +107,7 @@
   - _Boundary: FeedbackService, FeedbackRepository_
   - _Depends: 1.3, 2.2, 3.2_
 
-- [ ] 4.4 FAQ・履歴・評価APIを接続する
+- [x] 4.4 FAQ・履歴・評価APIを接続する
   - GET/POST FAQ、PATCH FAQ、GET history、POST feedbackを各serviceへ接続する。
   - 全routeへauth、owner/admin、Origin、media、Zod、標準errorを適用し、DELETE FAQ routeを提供しない。
   - OpenAPI endpoint表の正常・全4xx/5xx responseとresponse shapeに一致するcontract testを完了条件とする。
