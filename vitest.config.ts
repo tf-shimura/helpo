@@ -1,9 +1,11 @@
-import tailwindcss from '@tailwindcss/vite'
-import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  resolve: {
+    alias: {
+      'server-only': new URL('./tests/fixtures/server-only.ts', import.meta.url).pathname,
+    },
+  },
   test: {
     environment: 'jsdom',
     setupFiles: './tests/setup.ts',

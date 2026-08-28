@@ -1,5 +1,9 @@
 .DS_Store
 .devin/config.local.json
 node_modules/
+.env
+.env.*
+!.env.example
+.next/
 dist/
 *.tsbuildinfo

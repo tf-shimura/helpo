@@ -6,8 +6,8 @@
 
 **完全dependency DAG**: `1.1→1.2→1.3`; `1.1,1.2→2.1`; `1.3,2.1→2.2`; `1.3,2.2→3.1`; `1.3,2.2,3.1→3.2`; `1.3,3.2→3.3`; `3.1,3.2,3.3→3.4`; `1.3,2.2,3.2→4.1/4.2/4.3`; `3.3,4.1,4.2,4.3→4.4`; `1.3→5.1`; `1.1,1.3→5.2`; `4.1,5.1,5.2→5.3`; `1.3→6.1`; `2.2,5.3,6.1→6.2`; `6.2→6.3`; `3.3,3.4,6.3→6.4`; `3.4,4.4,6.4→7.1→7.2→7.3→7.4`。Repository port/Clock/event typeは1.3、実装repositoryは2.2が先行し、暗黙依存を認めない。
 
-- [ ] 1. Next.js Nodeサーバーと検証基盤を整える
-- [ ] 1.1 互換versionとserver-only設定の起動gateを固定する
+- [x] 1. Next.js Nodeサーバーと検証基盤を整える
+- [x] 1.1 互換versionとserver-only設定の起動gateを固定する
   - Node.js 24の最新security patch、Next.js 16.3.3、Prisma三package 7.10.0、OpenAI SDK 7.8.0、Zod 4.4.3、argon2 0.45.1をlockし、Next.js Node Runtimeで起動する。
   - OpenAI modelの利用可否、Responses/Structured Outputs対応、保存・学習・region・組織承認を検証済みallowlistとして扱い、未確認・不一致・未承認ならAI readinessを失敗させる。
   - 秘密をclient bundleへ公開せず、必須設定の欠落や不正値が値そのものを表示せず起動時に検出される状態を完了条件とする。
@@ -15,7 +15,7 @@
   - _Boundary: ServerConfig, RuntimeFoundation_
   - _Depends: なし_
 
-- [ ] 1.2 Next.js App Routerへのhost移行とserver test harnessを作る
+- [x] 1.2 Next.js App Routerへのhost移行とserver test harnessを作る
   - ViteからNext.js App Routerへ実行・build・typecheck・test scriptsを移し、全APIをNode Runtimeで動かす。
   - Vitest、temporary SQLite、fake Clock、fake AnswerProvider、request/stream test helperを用意する。
   - 既存画面を実APIへ接続せず、server起動、strict typecheck、空のtest suite、production buildが成功する状態を完了条件とする。
@@ -23,7 +23,7 @@
   - _Boundary: RuntimeFoundation, TestDoubles_
   - _Depends: 1.1_
 
-- [ ] 1.3 共通のUnicode、結果型、要求ID、redaction境界を実装する
+- [x] 1.3 共通のUnicode、結果型、要求ID、redaction境界を実装する
   - Unicode書記素を複合絵文字・結合文字・改行の契約どおり数え、空白入力を判定する。
   - 判別共用体のapplication error、要求ID、安全なlog metadataを共通化し、本文・資格情報・tokenを受け取らないlogger境界を作る。
   - 0/1/400/401、0/1/1000/1001とsecret markerのunit testが通る状態を完了条件とする。

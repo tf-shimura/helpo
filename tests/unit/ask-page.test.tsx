@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import AskPage from '../../src/pages/AskPage'
+import AskPage from '../../src/views/AskPage'
 import { ControlledAnswer } from '../../src/shared/mock/controlled-answer'
 
 afterEach(cleanup)
