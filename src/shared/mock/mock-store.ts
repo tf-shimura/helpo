@@ -1,3 +1,4 @@
+import { isBlankInput, validateGraphemeLimit } from '../validation/graphemes'
 import type { ManualClock } from './manual-clock'
 
 export type Role = 'employee' | 'admin'
@@ -29,6 +30,12 @@ export type MockHistory = {
   askedAt: Date
   question: string
   answer: string
+  feedback: Feedback | null
+}
+
+type GeneratedAnswer = {
+  id: string
+  accountId: string
   feedback: Feedback | null
 }
 
@@ -76,6 +83,7 @@ export function createMockStore(clock: ManualClock, options: MockStoreOptions = 
   const accounts = INITIAL_ACCOUNTS.map((account) => ({ ...account }))
   const faqs = (options.faqs ?? INITIAL_FAQS).map((faq) => ({ ...faq }))
   const histories = (options.histories ?? []).map((entry) => ({ ...entry, askedAt: new Date(entry.askedAt) }))
+  const generatedAnswers: GeneratedAnswer[] = []
   const loginAttempts = new Map(
     Object.entries(options.loginAttempts ?? {}).map(([employeeId, attempts]) => [
       employeeId,
@@ -96,6 +104,9 @@ export function createMockStore(clock: ManualClock, options: MockStoreOptions = 
   const currentAccount = (): MockAccount | null => {
     const current = activeSession()
     return accounts.find((candidate) => candidate.id === current?.accountId) ?? null
+  }
+  const requireAdmin = (): void => {
+    if (currentAccount()?.role !== 'admin') throw new Error('権限がありません')
   }
 
   return {
@@ -157,6 +168,10 @@ export function createMockStore(clock: ManualClock, options: MockStoreOptions = 
     },
 
     addFaq(question: string, answer: string): MockFaq {
+      requireAdmin()
+      if (isBlankInput(question) || isBlankInput(answer) || !validateGraphemeLimit(question, 1000) || !validateGraphemeLimit(answer, 1000)) {
+        throw new Error('質問と回答は1000文字以内で入力してください')
+      }
       if (faqs.some((faq) => faq.question === question)) throw new Error('同じ質問が登録済みです')
       const faq = { id: `faq-${nextNumericId('faq', faqs.map(({ id }) => id))}`, question, answer }
       faqs.push(faq)
@@ -164,8 +179,12 @@ export function createMockStore(clock: ManualClock, options: MockStoreOptions = 
     },
 
     updateFaq(id: string, question: string, answer: string): MockFaq {
+      requireAdmin()
       const faq = faqs.find((candidate) => candidate.id === id)
       if (!faq) throw new Error('FAQが見つかりません')
+      if (isBlankInput(question) || isBlankInput(answer) || !validateGraphemeLimit(question, 1000) || !validateGraphemeLimit(answer, 1000)) {
+        throw new Error('質問と回答は1000文字以内で入力してください')
+      }
       if (faqs.some((candidate) => candidate.id !== id && candidate.question === question)) {
         throw new Error('同じ質問が登録済みです')
       }
@@ -216,6 +235,33 @@ export function createMockStore(clock: ManualClock, options: MockStoreOptions = 
       if (!entry || entry.feedback) return false
       entry.feedback = feedback
       return true
+    },
+
+    addGeneratedAnswer(): GeneratedAnswer {
+      const account = currentAccount()
+      if (!account) throw new Error('ログインが必要です')
+      const answer = { id: `answer-${nextNumericId('answer', generatedAnswers.map(({ id }) => id))}`, accountId: account.id, feedback: null }
+      generatedAnswers.push(answer)
+      return { ...answer }
+    },
+
+    rateGeneratedAnswer(answerId: string, feedback: Feedback): boolean {
+      const account = currentAccount()
+      const answer = generatedAnswers.find((candidate) => candidate.id === answerId && candidate.accountId === account?.id)
+      if (!answer || answer.feedback) return false
+      answer.feedback = feedback
+      return true
+    },
+
+    getGeneratedAnswers(): GeneratedAnswer[] {
+      const account = currentAccount()
+      if (!account) return []
+      return generatedAnswers.filter((answer) => answer.accountId === account.id).map((answer) => ({ ...answer }))
+    },
+
+    getGeneratedAnswerFeedback(answerId: string): Feedback | null {
+      const account = currentAccount()
+      return generatedAnswers.find((candidate) => candidate.id === answerId && candidate.accountId === account?.id)?.feedback ?? null
     },
   }
 }

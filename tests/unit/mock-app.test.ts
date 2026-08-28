@@ -80,6 +80,7 @@ describe('ブラウザ内モック状態', () => {
 
   it('FAQを登録・更新し、完全一致の回答シナリオと空状態を再現する', () => {
     const store = createMockStore(new ManualClock(), { faqs: [] })
+    store.authenticate('A001', 'admin-pass')
     expect(store.getFaqs()).toEqual([])
     const faq = store.addFaq('在宅勤務はできますか？', '週2日まで利用できます。')
     const secondFaq = store.addFaq('申請方法は？', '勤怠システムから申請します。')
@@ -102,6 +103,7 @@ describe('ブラウザ内モック状態', () => {
   it('seed済みFAQと衝突しないIDを発行する', () => {
     const seededFaq = { id: 'faq-2', question: '既存質問', answer: '既存回答' }
     const store = createMockStore(new ManualClock(), { faqs: [seededFaq] })
+    store.authenticate('A001', 'admin-pass')
     const added = store.addFaq('追加質問', '追加回答')
     const another = store.addFaq('別の質問', '別の回答')
 
@@ -279,5 +281,114 @@ describe('ログイン体験', () => {
     clock.advanceBy(24 * 60 * 60 * 1000)
     rerender(createElement(MockApp, { requestedScreen: 'history', store }))
     expect(screen.getByRole('heading', { name: 'ログイン' })).toBeInTheDocument()
+  })
+})
+
+describe('タスク4の画面統合', () => {
+  it('認証済み4画面で同じ共通ナビを使いFAQ管理ではcurrentを付けない', () => {
+    const { rerender } = render(createElement(MockApp, { requestedScreen: 'question', role: 'admin' }))
+    expect(screen.getByRole('button', { name: '質問' })).toHaveAttribute('aria-current', 'page')
+
+    rerender(createElement(MockApp, { requestedScreen: 'history', role: 'admin' }))
+    expect(screen.getByRole('button', { name: '履歴' })).toHaveAttribute('aria-current', 'page')
+
+    rerender(createElement(MockApp, { requestedScreen: 'faq', role: 'admin' }))
+    expect(screen.getByRole('button', { name: 'FAQ閲覧' })).toHaveAttribute('aria-current', 'page')
+
+    rerender(createElement(MockApp, { requestedScreen: 'faq-admin', role: 'admin' }))
+    expect(screen.getByRole('navigation', { name: '共通ナビゲーション' }).querySelector('[aria-current]')).toBeNull()
+  })
+
+  it('FAQ管理入口は管理者のFAQ閲覧だけに表示される', async () => {
+    const user = userEvent.setup()
+    const { rerender } = render(createElement(MockApp, { requestedScreen: 'faq', role: 'employee' }))
+    expect(screen.queryByRole('button', { name: 'FAQ管理' })).not.toBeInTheDocument()
+
+    rerender(createElement(MockApp, { requestedScreen: 'faq', role: 'admin' }))
+    await user.click(screen.getByRole('button', { name: 'FAQ管理' }))
+    expect(screen.getByRole('heading', { name: 'FAQ管理' })).toBeInTheDocument()
+  })
+
+  it('生成回答の評価を社員と回答の組み合わせごとに一度だけ保存する', () => {
+    const store = createMockStore(new ManualClock())
+    store.authenticate('E001', 'employee-pass')
+    const answer = store.addGeneratedAnswer()
+    expect(store.rateGeneratedAnswer(answer.id, 'good')).toBe(true)
+    expect(store.rateGeneratedAnswer(answer.id, 'bad')).toBe(false)
+    expect(store.getGeneratedAnswerFeedback(answer.id)).toBe('good')
+
+    store.logout()
+    store.authenticate('A001', 'admin-pass')
+    expect(store.rateGeneratedAnswer(answer.id, 'bad')).toBe(false)
+    expect(store.getGeneratedAnswerFeedback(answer.id)).toBeNull()
+  })
+
+  it.each([
+    ['不明な質問', '登録済みFAQから回答できません。総務へお問い合わせください'],
+    ['__ERROR__', '回答を取得できませんでした。もう一度お試しください'],
+  ])('定義済みシナリオ%sを生成中から結果へ進める', async (question, result) => {
+    const user = userEvent.setup()
+    const store = createMockStore(new ManualClock())
+    store.authenticate('E001', 'employee-pass')
+    render(createElement(MockApp, { requestedScreen: 'question', store }))
+
+    await user.type(screen.getByRole('textbox', { name: '質問内容' }), question)
+    await user.click(screen.getByRole('button', { name: '質問する' }))
+    expect(screen.getByRole('status')).toHaveTextContent('回答を生成しています')
+    await user.click(screen.getByRole('button', { name: '結果へ進む' }))
+    expect(screen.getByText(result)).toBeInTheDocument()
+
+    if (question === '__ERROR__') {
+      await user.click(screen.getByRole('button', { name: 'もう一度試す' }))
+      expect(screen.getByRole('status')).toHaveTextContent('回答を生成しています')
+    }
+  })
+
+  it('共通ナビを実操作して画面遷移と現在地を更新する', async () => {
+    const user = userEvent.setup()
+    render(createElement(MockApp, { requestedScreen: 'question', role: 'employee' }))
+
+    await user.click(screen.getByRole('button', { name: '履歴' }))
+    expect(screen.getByRole('heading', { name: '質問履歴' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '履歴' })).toHaveAttribute('aria-current', 'page')
+    await user.click(screen.getByRole('button', { name: 'FAQ閲覧' }))
+    expect(screen.getByRole('heading', { name: 'FAQ閲覧' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'FAQ閲覧' })).toHaveAttribute('aria-current', 'page')
+    await user.click(screen.getByRole('button', { name: '質問' }))
+    expect(screen.getByRole('heading', { name: '社内制度について質問' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '質問' })).toHaveAttribute('aria-current', 'page')
+  })
+
+  it.each(['question', 'history', 'faq'] as const)('%s画面からログアウトできる', async (requestedScreen) => {
+    const user = userEvent.setup()
+    const store = createMockStore(new ManualClock())
+    store.authenticate('E001', 'employee-pass')
+    render(createElement(MockApp, { requestedScreen, store }))
+
+    await user.click(screen.getByRole('button', { name: 'ログアウト' }))
+    expect(screen.getByRole('heading', { name: 'ログイン' })).toBeInTheDocument()
+    expect(store.getCurrentUser()).toBeNull()
+  })
+
+  it('ログインから回答完了と評価まで操作し社員所有回答へ一度だけ記録する', async () => {
+    const user = userEvent.setup()
+    const store = createMockStore(new ManualClock())
+    render(createElement(MockApp, { requestedScreen: 'login', store }))
+
+    await user.type(screen.getByLabelText('社員ID'), 'E001')
+    await user.type(screen.getByLabelText('パスワード'), 'employee-pass')
+    await user.click(screen.getByRole('button', { name: 'ログイン' }))
+    await user.type(screen.getByRole('textbox', { name: '質問内容' }), '有給休暇はいつまでに申請すればよいですか？')
+    await user.click(screen.getByRole('button', { name: '質問する' }))
+    await user.click(screen.getByRole('button', { name: '完了' }))
+    await user.click(screen.getByRole('button', { name: 'Good' }))
+
+    const [answer] = store.getGeneratedAnswers()
+    expect(answer.feedback).toBe('good')
+    expect(store.rateGeneratedAnswer(answer.id, 'bad')).toBe(false)
+    store.logout()
+    store.authenticate('A001', 'admin-pass')
+    expect(store.getGeneratedAnswers()).toEqual([])
+    expect(store.rateGeneratedAnswer(answer.id, 'bad')).toBe(false)
   })
 })

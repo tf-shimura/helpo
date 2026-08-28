@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react'
+import { AuthenticatedNavigation } from './components/authenticated-navigation'
 import AskPage from './pages/AskPage'
+import { FaqAdminPage } from './pages/faq-admin-page'
+import { FaqPage } from './pages/faq-page'
+import { HistoryPage } from './pages/history-page'
 import { LoginPage } from './pages/LoginPage'
+import { ControlledAnswer } from './shared/mock/controlled-answer'
 import type { createMockStore, Role } from './shared/mock/mock-store'
 import { resolveScreen, type RequestedScreen } from './shared/mock/screen-access'
 
@@ -12,17 +17,14 @@ type MockAppProps = {
   store?: MockStore
 }
 
-const screenHeadings = {
-  login: 'ログイン',
-  history: '質問履歴',
-  faq: 'FAQ閲覧',
-  'faq-admin': 'FAQ管理',
-} as const
-
 export function MockApp({ requestedScreen, role = null, store }: MockAppProps) {
   const [currentScreen, setCurrentScreen] = useState(requestedScreen)
+  const [editingFaqId, setEditingFaqId] = useState<string | null>(null)
   const [, refresh] = useState(0)
-  useEffect(() => setCurrentScreen(requestedScreen), [requestedScreen])
+  useEffect(() => {
+    setCurrentScreen(requestedScreen)
+    setEditingFaqId(null)
+  }, [requestedScreen])
   const currentRole = store?.getCurrentUser()?.role ?? role
   const { screen } = resolveScreen(currentScreen, currentRole)
 
@@ -33,29 +35,45 @@ export function MockApp({ requestedScreen, role = null, store }: MockAppProps) {
   }
 
   if (screen === 'login' && store) {
-    return (
-      <LoginPage
-        authenticate={(employeeId, password) => store.authenticate(employeeId, password)}
-        onAuthenticated={() => {
-          setCurrentScreen('question')
-          refresh((value) => value + 1)
-        }}
-      />
-    )
+    return <LoginPage authenticate={(employeeId, password) => store.authenticate(employeeId, password)} onAuthenticated={() => { setCurrentScreen('question'); refresh((value) => value + 1) }} />
   }
-  if (screen === 'question') return <AskPage onLogout={store ? logout : undefined} />
+  if (screen === 'login') return <main><h1>ログイン</h1></main>
+  const navigate = (nextScreen: 'question' | 'history' | 'faq') => setCurrentScreen(nextScreen)
+  if (screen === 'question') {
+    return <AskPage onLogout={store ? logout : undefined} onNavigate={navigate} createAnswer={store ? (question) => {
+      const scenario = store.getAnswerScenario(question)
+      if (scenario.kind === 'unavailable') return new ControlledAnswer([], [], 'unavailable')
+      if (scenario.kind === 'failure') return new ControlledAnswer([], [], 'failed')
+      const faqQuestions = new Map(store.getFaqs().map((faq) => [faq.id, faq.question]))
+      const sources = scenario.sources.flatMap((id) => faqQuestions.get(id) ?? [])
+      const midpoint = Math.max(1, Math.ceil(scenario.answer.length / 2))
+      return new ControlledAnswer([scenario.answer.slice(0, midpoint), scenario.answer.slice(midpoint)].filter(Boolean), sources)
+    } : undefined} createAnswerRecord={store ? () => store.addGeneratedAnswer().id : undefined} rateAnswer={store ? (id, feedback) => store.rateGeneratedAnswer(id, feedback) : undefined} />
+  }
   if (screen === 'forbidden') return <p role="alert">権限がありません</p>
 
+  const current = screen === 'faq-admin' ? null : screen
+  const faqs = store?.getFaqs() ?? []
+  const editFaq = (id: string) => {
+    setEditingFaqId(id)
+    setCurrentScreen('faq-admin')
+  }
   return (
-    <main className="grid min-h-screen place-items-center bg-[#f5f7fb] p-6 text-slate-950">
-      <section className="w-full max-w-3xl rounded-lg border border-slate-200 bg-white p-8 shadow-sm">
-        <h1 className="text-3xl font-bold">{screenHeadings[screen]}</h1>
-        {store && (
-          <button type="button" onClick={logout} className="mt-8 rounded-lg border border-slate-300 px-4 py-2 font-semibold">
-            ログアウト
-          </button>
-        )}
-      </section>
-    </main>
+    <div className="min-h-screen bg-[#f5f7fb] text-slate-950">
+      <AuthenticatedNavigation current={current} onNavigate={navigate} onLogout={store ? logout : undefined} />
+      <main className="grid place-items-center p-6">
+        {screen === 'history' && <HistoryPage entries={store?.getHistory() ?? []} />}
+        {screen === 'faq' && <FaqPage faqs={faqs} role={currentRole!} onCreate={() => { setEditingFaqId(null); setCurrentScreen('faq-admin') }} onEdit={editFaq} />}
+        {screen === 'faq-admin' && <>
+          <h2 className="sr-only">FAQ管理</h2>
+          <FaqAdminPage
+            key={editingFaqId ?? 'new'}
+            faq={faqs.find(({ id }) => id === editingFaqId) ?? null}
+            onCreate={(question, answer) => store?.addFaq(question, answer)}
+            onUpdate={(id, question, answer) => store?.updateFaq(id, question, answer)}
+          />
+        </>}
+      </main>
+    </div>
   )
 }

@@ -1,4 +1,5 @@
 export type AnswerStatus = 'pending' | 'streaming' | 'completed' | 'unavailable' | 'failed' | 'aborted'
+export type AnswerOutcome = 'completed' | 'unavailable' | 'failed'
 
 export type AnswerSnapshot = {
   status: AnswerStatus
@@ -14,6 +15,7 @@ export class ControlledAnswer {
   constructor(
     private readonly chunks: readonly string[],
     private readonly completedSources: readonly string[] = [],
+    private readonly outcome: AnswerOutcome = 'completed',
   ) {}
 
   snapshot(): AnswerSnapshot {
@@ -36,6 +38,12 @@ export class ControlledAnswer {
     this.ensureActive()
     while (this.chunkIndex < this.chunks.length) this.advance()
     this.status = 'completed'
+  }
+
+  settle(): void {
+    if (this.outcome === 'unavailable') this.markUnavailable()
+    else if (this.outcome === 'failed') this.fail()
+    else this.complete()
   }
 
   markUnavailable(): void {
